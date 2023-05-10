@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:15.2
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_DB=stock
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-1234}
+    volumes:
+      - db-vol:/var/lib/postgresql/data
+  db-gui:
+    image: sosedoff/pgweb
+    environment:
+      - "PGWEB_DATABASE_URL=postgres://postgres:${DB_PASSWORD}@db:5432/stock?sslmode=disable"
+    ports:
+      - "${DB_GUI_PORT:-8081}:8081"
+    depends_on:
+      - db
+volumes:
+  db-vol:
