@@ -4,10 +4,14 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"os"
+	"sync"
 	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+	"gorm.io/gorm/schema"
 )
 
 type HeadColumns struct {
@@ -54,7 +58,7 @@ type Brand struct {
 	HeadColumns
 
 	Date               Date   `gorm:"not null;index"`
-	Code               string `gorm:"not null;index"`
+	Code               string `gorm:"not null;unique;index"`
 	CompanyName        string `gorm:"not null"`
 	CompanyNameEnglish string `gorm:"not null"`
 	Sector17Code       string `gorm:"not null"`
@@ -107,4 +111,36 @@ func Init(config Config) (*gorm.DB, error) {
 	}
 
 	return db, nil
+}
+
+func UpsertToBrands(db *gorm.DB, records []Brand) error {
+	schema, err := schema.Parse(&Brand{}, &sync.Map{}, schema.NamingStrategy{})
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	updateColumns := []string{}
+	ignoreColumns := []string{"id", "created_at"}
+	for _, field := range schema.Fields {
+		ignore := false
+		for _, ignoreColumn := range ignoreColumns {
+			if field.DBName == ignoreColumn {
+				ignore = true
+				break
+			}
+		}
+		if ignore {
+			continue
+		}
+
+		updateColumns = append(updateColumns, field.DBName)
+	}
+
+	db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "code"}},
+		DoUpdates: clause.AssignmentColumns(updateColumns),
+	}).Create(records)
+
+	return nil
 }

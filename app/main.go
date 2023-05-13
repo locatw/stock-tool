@@ -71,8 +71,11 @@ func main() {
 		}
 
 		records := convertBrands(brands)
-
-		db.Create(records)
+		err = storage.UpsertToBrands(db, records)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 	default:
 		fmt.Printf("Unknown command: %s\n", command)
 		os.Exit(1)
