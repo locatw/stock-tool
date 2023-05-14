@@ -11,6 +11,7 @@ import (
 	"stock-tool/storage"
 
 	"github.com/joho/godotenv"
+	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 )
 
@@ -44,16 +45,20 @@ func init() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
+	decimal.MarshalJSONWithoutQuotes = true
 }
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Println("Usage: jquants-study COMMAND")
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: jquants-study COMMAND [COMMAND_ARGS]")
 		os.Exit(1)
 	}
 
 	command := os.Args[1]
 	switch command {
+	case "migrate":
+		// Migration is already run in init(). Do nothing.
 	case "fetch-brands":
 		client := jquants.NewClient()
 		token, err := login(client)
@@ -63,6 +68,44 @@ func main() {
 		}
 
 		fetchBrands(client, token)
+	case "fetch-daily-quotes":
+		if len(os.Args) != 5 {
+			fmt.Println("Usage: jquants-study COMMAND [COMMAND_ARGS]")
+			os.Exit(1)
+		}
+
+		brandCode := os.Args[2]
+		from, err := jquants.NewDateFromString(os.Args[3])
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		to, err := jquants.NewDateFromString(os.Args[4])
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		request := jquants.NewGetDailyQuoteRequestByCodeAndPeriod(brandCode, from, to)
+
+		client := jquants.NewClient()
+		token, err := login(client)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		resp, err := client.GetDailyQuotes(token, request)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		err = writeToFile("daily-quotes.json", resp)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 	case "load-brands":
 		brands, err := jquants.LoadBrands()
 		if err != nil {
@@ -72,6 +115,19 @@ func main() {
 
 		records := convertBrands(brands)
 		err = storage.UpsertToBrands(db, records)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	case "load-daily-quotes":
+		prices, err := jquants.LoadPrices()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		records := convertPrices(prices)
+		err = storage.UpsertToPrice(db, records)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -147,6 +203,32 @@ func convertBrands(fromValues jquants.ListBrandResponse) []storage.Brand {
 	}
 
 	return brands
+}
+
+func convertPrices(fromValues jquants.GetDailyQuoteResponse) []storage.Price {
+	prices := []storage.Price{}
+	for _, from := range fromValues.DailyQuotes {
+		price := storage.Price{
+			Date:             convertDate(from.Date),
+			Code:             from.Code,
+			Open:             from.Open,
+			High:             from.High,
+			Low:              from.Low,
+			Close:            from.Close,
+			Volume:           from.Volume,
+			TurnoverValue:    from.TurnoverValue,
+			AdjustmentFactor: from.AdjustmentFactor,
+			AdjustmentOpen:   from.AdjustmentOpen,
+			AdjustmentHigh:   from.AdjustmentHigh,
+			AdjustmentLow:    from.AdjustmentLow,
+			AdjustmentClose:  from.AdjustmentClose,
+			AdjustmentVolume: from.AdjustmentVolume,
+		}
+
+		prices = append(prices, price)
+	}
+
+	return prices
 }
 
 func convertDate(jquantsDate jquants.Date) storage.Date {

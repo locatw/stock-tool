@@ -10,10 +10,13 @@ import (
 	"net/url"
 	"os"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 const (
-	baseUrl = "https://api.jquants.com/v1"
+	baseUrl          = "https://api.jquants.com/v1"
+	dateStringFormat = "%04d-%02d-%02d"
 )
 
 var (
@@ -26,12 +29,23 @@ type Date struct {
 	Day   int
 }
 
+func NewDateFromString(value string) (Date, error) {
+	date := Date{}
+	_, err := fmt.Sscanf(value, dateStringFormat, &date.Year, &date.Month, &date.Day)
+	if err != nil {
+		return Date{}, err
+	}
+
+	return date, nil
+}
+
 func (d *Date) Format() string {
 	return fmt.Sprintf("%04d-%02d-%02d", d.Year, d.Month, d.Day)
 }
 
 func (d *Date) UnmarshalJSON(data []byte) error {
-	_, err := fmt.Sscanf(string(data), "\"%04d-%02d-%02d\"", &d.Year, &d.Month, &d.Day)
+	format := fmt.Sprintf("\"%s\"", dateStringFormat)
+	_, err := fmt.Sscanf(string(data), format, &d.Year, &d.Month, &d.Day)
 	if err != nil {
 		return err
 	}
@@ -65,22 +79,6 @@ type ListBrandRequest struct {
 	Date *Date   `json:"date"`
 }
 
-func (r ListBrandRequest) WithCode(code string) ListBrandRequest {
-	value := new(string)
-	*value = code
-	r.Code = value
-
-	return r
-}
-
-func (r ListBrandRequest) WithDate(date Date) ListBrandRequest {
-	value := new(Date)
-	*value = date
-	r.Date = value
-
-	return r
-}
-
 type ListBrandResponse struct {
 	Brands []BrandInfo `json:"info"`
 }
@@ -97,6 +95,62 @@ type BrandInfo struct {
 	ScaleCategory      string `json:"ScaleCategory"`
 	MarketCode         string `json:"MarketCode"`
 	MarketCodeName     string `json:"MarketCodeName"`
+}
+
+type GetDailyQuoteRequest struct {
+	Code *string `json:"code"`
+	Date *Date   `json:"date"`
+	From *Date   `json:"from"`
+	To   *Date   `json:"to"`
+}
+
+type GetDailyQuoteResponse struct {
+	DailyQuotes   []DailyQuote `json:"daily_quotes"`
+	PaginationKey *string      `json:"pagination_key"`
+}
+
+type DailyQuote struct {
+	Date             Date            `json:"Date"`
+	Code             string          `json:"Code"`
+	Open             decimal.Decimal `json:"Open"`
+	High             decimal.Decimal `json:"High"`
+	Low              decimal.Decimal `json:"Low"`
+	Close            decimal.Decimal `json:"Close"`
+	Volume           decimal.Decimal `json:"Volume"`
+	TurnoverValue    decimal.Decimal `json:"TurnoverValue"`
+	AdjustmentFactor decimal.Decimal `json:"AdjustmentFactor"`
+	AdjustmentOpen   decimal.Decimal `json:"AdjustmentOpen"`
+	AdjustmentHigh   decimal.Decimal `json:"AdjustmentHigh"`
+	AdjustmentLow    decimal.Decimal `json:"AdjustmentLow"`
+	AdjustmentClose  decimal.Decimal `json:"AdjustmentClose"`
+	AdjustmentVolume decimal.Decimal `json:"AdjustmentVolume"`
+}
+
+func NewGetDailyQuoteRequestByCode(code string) GetDailyQuoteRequest {
+	return GetDailyQuoteRequest{
+		Code: toStringPointer(code),
+		Date: nil,
+		From: nil,
+		To:   nil,
+	}
+}
+
+func NewGetDailyQuoteRequestByCodeAndPeriod(code string, from Date, to Date) GetDailyQuoteRequest {
+	return GetDailyQuoteRequest{
+		Code: toStringPointer(code),
+		Date: nil,
+		From: toDatePointer(from),
+		To:   toDatePointer(to),
+	}
+}
+
+func NewGetDailyQuoteRequestByDate(date Date) GetDailyQuoteRequest {
+	return GetDailyQuoteRequest{
+		Code: nil,
+		Date: toDatePointer(date),
+		From: nil,
+		To:   nil,
+	}
 }
 
 type Client struct {
@@ -192,6 +246,50 @@ func (c *Client) ListBrand(idToken string, request ListBrandRequest) (ListBrandR
 	err = json.Unmarshal(respBody, &result)
 	if err != nil {
 		return ListBrandResponse{}, err
+	}
+
+	return result, nil
+}
+
+func (c *Client) GetDailyQuotes(idToken string, request GetDailyQuoteRequest) (GetDailyQuoteResponse, error) {
+	params := url.Values{}
+	if request.Code != nil {
+		params.Add("code", *request.Code)
+	}
+	if request.Date != nil {
+		params.Add("date", request.Date.Format())
+	}
+	if request.From != nil {
+		params.Add("from", request.From.Format())
+	}
+	if request.To != nil {
+		params.Add("to", request.To.Format())
+	}
+
+	req, err := newRequestBuilder(http.MethodGet, "prices/daily_quotes").
+		withAuthorizationHeader(idToken).
+		addQueryParameters(params).
+		build()
+	if err != nil {
+		return GetDailyQuoteResponse{}, err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return GetDailyQuoteResponse{}, err
+	}
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return GetDailyQuoteResponse{}, err
+	}
+
+	ioutil.WriteFile("debug-daily-quotes.json", respBody, 0775)
+
+	var result GetDailyQuoteResponse
+	err = json.Unmarshal(respBody, &result)
+	if err != nil {
+		return GetDailyQuoteResponse{}, err
 	}
 
 	return result, nil
@@ -333,4 +431,38 @@ func LoadBrands() (ListBrandResponse, error) {
 	}
 
 	return brands, nil
+}
+
+func LoadPrices() (GetDailyQuoteResponse, error) {
+	jsonFile, err := os.Open("daily-quotes.json")
+	if err != nil {
+		return GetDailyQuoteResponse{}, err
+	}
+	defer jsonFile.Close()
+
+	jsonBytes, err := ioutil.ReadAll(jsonFile)
+	if err != nil {
+		return GetDailyQuoteResponse{}, err
+	}
+
+	var prices GetDailyQuoteResponse
+	if err := json.Unmarshal(jsonBytes, &prices); err != nil {
+		return GetDailyQuoteResponse{}, err
+	}
+
+	return prices, nil
+}
+
+func toStringPointer(value string) *string {
+	p := new(string)
+	*p = value
+
+	return p
+}
+
+func toDatePointer(value Date) *Date {
+	p := new(Date)
+	*p = value
+
+	return p
 }
