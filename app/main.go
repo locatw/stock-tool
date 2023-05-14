@@ -69,24 +69,29 @@ func main() {
 
 		fetchBrands(client, token)
 	case "fetch-daily-quotes":
-		if len(os.Args) != 5 {
+		var request jquants.GetDailyQuoteRequest
+		switch len(os.Args) {
+		case 3:
+			brandCode := os.Args[2]
+			request = jquants.NewGetDailyQuoteRequestByCode(brandCode)
+		case 5:
+			brandCode := os.Args[2]
+			from, err := jquants.NewDateFromString(os.Args[3])
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			to, err := jquants.NewDateFromString(os.Args[4])
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+
+			request = jquants.NewGetDailyQuoteRequestByCodeAndPeriod(brandCode, from, to)
+		default:
 			fmt.Println("Usage: jquants-study COMMAND [COMMAND_ARGS]")
 			os.Exit(1)
 		}
-
-		brandCode := os.Args[2]
-		from, err := jquants.NewDateFromString(os.Args[3])
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		to, err := jquants.NewDateFromString(os.Args[4])
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		request := jquants.NewGetDailyQuoteRequestByCodeAndPeriod(brandCode, from, to)
 
 		client := jquants.NewClient()
 		token, err := login(client)
@@ -95,16 +100,30 @@ func main() {
 			os.Exit(1)
 		}
 
-		resp, err := client.GetDailyQuotes(token, request)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		for {
+			resp, err := client.GetDailyQuotes(token, request)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 
-		err = writeToFile("daily-quotes.json", resp)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			if resp.PaginationKey == nil {
+				err = writeToFile("daily-quotes.json", resp)
+				if err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+
+				break
+			} else {
+				err = writeToFile(fmt.Sprintf("daily-quotes_%s.json", *resp.PaginationKey), resp)
+				if err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+
+				request.PaginationKey = resp.PaginationKey
+			}
 		}
 	case "load-brands":
 		brands, err := jquants.LoadBrands()
@@ -127,7 +146,29 @@ func main() {
 		}
 
 		records := convertPrices(prices)
-		err = storage.UpsertToPrice(db, records)
+		chunkSize := 1000
+		loopCount := len(records) / chunkSize
+		remainder := len(records) % chunkSize
+		if remainder != 0 {
+			loopCount++
+		}
+		err = db.Transaction(func(tx *gorm.DB) error {
+			for i := 0; i < loopCount; i++ {
+				startIndex := i * chunkSize
+				endIndex := startIndex + chunkSize
+				if len(records) < endIndex {
+					endIndex = len(records)
+				}
+				chunk := records[startIndex:endIndex]
+
+				err = storage.UpsertToPrice(db, chunk)
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		})
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)

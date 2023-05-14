@@ -98,10 +98,11 @@ type BrandInfo struct {
 }
 
 type GetDailyQuoteRequest struct {
-	Code *string `json:"code"`
-	Date *Date   `json:"date"`
-	From *Date   `json:"from"`
-	To   *Date   `json:"to"`
+	Code          *string `json:"code"`
+	Date          *Date   `json:"date"`
+	From          *Date   `json:"from"`
+	To            *Date   `json:"to"`
+	PaginationKey *string `json:"pagination_key"`
 }
 
 type GetDailyQuoteResponse struct {
@@ -151,6 +152,12 @@ func NewGetDailyQuoteRequestByDate(date Date) GetDailyQuoteRequest {
 		From: nil,
 		To:   nil,
 	}
+}
+
+func (r *GetDailyQuoteRequest) WithPaginationKey(value string) *GetDailyQuoteRequest {
+	r.PaginationKey = toStringPointer(value)
+
+	return r
 }
 
 type Client struct {
@@ -265,6 +272,9 @@ func (c *Client) GetDailyQuotes(idToken string, request GetDailyQuoteRequest) (G
 	if request.To != nil {
 		params.Add("to", request.To.Format())
 	}
+	if request.PaginationKey != nil {
+		params.Add("pagination_key", *request.PaginationKey)
+	}
 
 	req, err := newRequestBuilder(http.MethodGet, "prices/daily_quotes").
 		withAuthorizationHeader(idToken).
@@ -284,7 +294,11 @@ func (c *Client) GetDailyQuotes(idToken string, request GetDailyQuoteRequest) (G
 		return GetDailyQuoteResponse{}, err
 	}
 
-	ioutil.WriteFile("debug-daily-quotes.json", respBody, 0775)
+	if request.PaginationKey == nil {
+		ioutil.WriteFile("debug-daily-quotes.json", respBody, 0775)
+	} else {
+		ioutil.WriteFile(fmt.Sprintf("debug-daily-quotes_%s.json", *request.PaginationKey), respBody, 0775)
+	}
 
 	var result GetDailyQuoteResponse
 	err = json.Unmarshal(respBody, &result)
