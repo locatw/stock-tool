@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"stock-tool/command"
 	"stock-tool/jquants"
 	"stock-tool/storage"
 
@@ -55,10 +56,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	command := os.Args[1]
-	switch command {
+	cmd := os.Args[1]
+	switch cmd {
 	case "migrate":
-		// Migration is already run in init(). Do nothing.
+		err := command.MigrateDB(db)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 	case "fetch-brands":
 		client := jquants.NewClient()
 		token, err := login(client)
@@ -174,7 +179,7 @@ func main() {
 			os.Exit(1)
 		}
 	default:
-		fmt.Printf("Unknown command: %s\n", command)
+		fmt.Printf("Unknown command: %s\n", cmd)
 		os.Exit(1)
 	}
 }

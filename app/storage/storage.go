@@ -128,16 +128,6 @@ func Init(config Config) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	err = db.AutoMigrate(&Brand{})
-	if err != nil {
-		return nil, err
-	}
-
-	err = db.AutoMigrate(&Price{})
-	if err != nil {
-		return nil, err
-	}
-
 	return db, nil
 }
 
