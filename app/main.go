@@ -1,14 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
 	"time"
 
 	"stock-tool/command"
-	"stock-tool/jquants"
 	"stock-tool/storage"
 
 	"github.com/joho/godotenv"
@@ -64,116 +62,13 @@ func main() {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-	case "fetch-brands":
-		client := jquants.NewClient()
-		token, err := login(client)
-		if err != nil {
-			fmt.Println(err)
+	case "update-stock-info":
+		if len(os.Args) < 3 {
+			fmt.Println("Usage: jquants-study update-stock-info DATE")
 			os.Exit(1)
 		}
 
-		fetchBrands(client, token)
-	case "fetch-daily-quotes":
-		var request jquants.GetDailyQuoteRequest
-		switch len(os.Args) {
-		case 3:
-			brandCode := os.Args[2]
-			request = jquants.NewGetDailyQuoteRequestByCode(brandCode)
-		case 5:
-			brandCode := os.Args[2]
-			from, err := jquants.NewDateFromString(os.Args[3])
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-			to, err := jquants.NewDateFromString(os.Args[4])
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-
-			request = jquants.NewGetDailyQuoteRequestByCodeAndPeriod(brandCode, from, to)
-		default:
-			fmt.Println("Usage: jquants-study COMMAND [COMMAND_ARGS]")
-			os.Exit(1)
-		}
-
-		client := jquants.NewClient()
-		token, err := login(client)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		for {
-			resp, err := client.GetDailyQuotes(token, request)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-
-			if resp.PaginationKey == nil {
-				err = writeToFile("daily-quotes.json", resp)
-				if err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-				}
-
-				break
-			} else {
-				err = writeToFile(fmt.Sprintf("daily-quotes_%s.json", *resp.PaginationKey), resp)
-				if err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-				}
-
-				request.PaginationKey = resp.PaginationKey
-			}
-		}
-	case "load-brands":
-		brands, err := jquants.LoadBrands()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		records := convertBrands(brands)
-		err = storage.UpsertToBrands(db, records)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-	case "load-daily-quotes":
-		prices, err := jquants.LoadPrices()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		records := convertPrices(prices)
-		chunkSize := 1000
-		loopCount := len(records) / chunkSize
-		remainder := len(records) % chunkSize
-		if remainder != 0 {
-			loopCount++
-		}
-		err = db.Transaction(func(tx *gorm.DB) error {
-			for i := 0; i < loopCount; i++ {
-				startIndex := i * chunkSize
-				endIndex := startIndex + chunkSize
-				if len(records) < endIndex {
-					endIndex = len(records)
-				}
-				chunk := records[startIndex:endIndex]
-
-				err = storage.UpsertToPrice(db, chunk)
-				if err != nil {
-					return err
-				}
-			}
-
-			return nil
-		})
+		err := command.UpdateStockInfo(db, os.Args[2])
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -182,101 +77,4 @@ func main() {
 		fmt.Printf("Unknown command: %s\n", cmd)
 		os.Exit(1)
 	}
-}
-
-func login(client *jquants.Client) (string, error) {
-	mailAddress := os.Getenv("JQUANTS_MAIL_ADDRESS")
-	password := os.Getenv("JQUANTS_PASSWORD")
-	authUserResp, err := client.AuthUser(jquants.AuthUserRequest{MailAddress: mailAddress, Password: password})
-	if err != nil {
-		return "", err
-	}
-
-	refreshTokenResp, err := client.RefreshToken(jquants.RefreshTokenRequest{RefreshToken: authUserResp.RefreshToken})
-	if err != nil {
-		return "", err
-	}
-
-	return refreshTokenResp.IDToken, nil
-}
-
-func writeToFile(fileName string, value interface{}) error {
-	file, err := os.Create(fileName)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	encoder.SetEscapeHTML(false)
-	encoder.SetIndent("", "  ")
-
-	return encoder.Encode(value)
-}
-
-func fetchBrands(client *jquants.Client, token string) error {
-	resp, err := client.ListBrand(token, jquants.ListBrandRequest{})
-	if err != nil {
-		return err
-	}
-
-	err = writeToFile("brands.json", resp)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func convertBrands(fromValues jquants.ListBrandResponse) []storage.Brand {
-	brands := []storage.Brand{}
-	for _, from := range fromValues.Brands {
-		brand := storage.Brand{
-			Date:               convertDate(from.Date),
-			Code:               from.Code,
-			CompanyName:        from.CompanyName,
-			CompanyNameEnglish: from.CompanyNameEnglish,
-			Sector17Code:       from.Sector17Code,
-			Sector17CodeName:   from.Sector17CodeName,
-			Sector33Code:       from.Sector33Code,
-			Sector33CodeName:   from.Sector33CodeName,
-			ScaleCategory:      from.ScaleCategory,
-			MarketCode:         from.MarketCode,
-			MarketCodeName:     from.MarketCodeName,
-		}
-
-		brands = append(brands, brand)
-	}
-
-	return brands
-}
-
-func convertPrices(fromValues jquants.GetDailyQuoteResponse) []storage.Price {
-	prices := []storage.Price{}
-	for _, from := range fromValues.DailyQuotes {
-		price := storage.Price{
-			Date:             convertDate(from.Date),
-			Code:             from.Code,
-			Open:             from.Open,
-			High:             from.High,
-			Low:              from.Low,
-			Close:            from.Close,
-			Volume:           from.Volume,
-			TurnoverValue:    from.TurnoverValue,
-			AdjustmentFactor: from.AdjustmentFactor,
-			AdjustmentOpen:   from.AdjustmentOpen,
-			AdjustmentHigh:   from.AdjustmentHigh,
-			AdjustmentLow:    from.AdjustmentLow,
-			AdjustmentClose:  from.AdjustmentClose,
-			AdjustmentVolume: from.AdjustmentVolume,
-		}
-
-		prices = append(prices, price)
-	}
-
-	return prices
-}
-
-func convertDate(jquantsDate jquants.Date) storage.Date {
-	return storage.Date{Year: jquantsDate.Year, Month: jquantsDate.Month, Day: jquantsDate.Day}
 }

@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -294,12 +293,6 @@ func (c *Client) GetDailyQuotes(idToken string, request GetDailyQuoteRequest) (G
 		return GetDailyQuoteResponse{}, err
 	}
 
-	if request.PaginationKey == nil {
-		ioutil.WriteFile("debug-daily-quotes.json", respBody, 0775)
-	} else {
-		ioutil.WriteFile(fmt.Sprintf("debug-daily-quotes_%s.json", *request.PaginationKey), respBody, 0775)
-	}
-
 	var result GetDailyQuoteResponse
 	err = json.Unmarshal(respBody, &result)
 	if err != nil {
@@ -425,46 +418,6 @@ func (b *requestBuilder) makeRequest(u *url.URL, body io.Reader) (*http.Request,
 	}
 
 	return req, nil
-}
-
-func LoadBrands() (ListBrandResponse, error) {
-	jsonFile, err := os.Open("brands.json")
-	if err != nil {
-		return ListBrandResponse{}, err
-	}
-	defer jsonFile.Close()
-
-	jsonBytes, err := ioutil.ReadAll(jsonFile)
-	if err != nil {
-		return ListBrandResponse{}, err
-	}
-
-	var brands ListBrandResponse
-	if err := json.Unmarshal(jsonBytes, &brands); err != nil {
-		return ListBrandResponse{}, err
-	}
-
-	return brands, nil
-}
-
-func LoadPrices() (GetDailyQuoteResponse, error) {
-	jsonFile, err := os.Open("daily-quotes.json")
-	if err != nil {
-		return GetDailyQuoteResponse{}, err
-	}
-	defer jsonFile.Close()
-
-	jsonBytes, err := ioutil.ReadAll(jsonFile)
-	if err != nil {
-		return GetDailyQuoteResponse{}, err
-	}
-
-	var prices GetDailyQuoteResponse
-	if err := json.Unmarshal(jsonBytes, &prices); err != nil {
-		return GetDailyQuoteResponse{}, err
-	}
-
-	return prices, nil
 }
 
 func toStringPointer(value string) *string {
