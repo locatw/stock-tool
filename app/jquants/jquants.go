@@ -219,6 +219,7 @@ func (c *API) AuthUser(request AuthUserRequest) (AuthUserResponse, error) {
 	if err != nil {
 		return AuthUserResponse{}, err
 	}
+	defer resp.Body.Close()
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -246,6 +247,7 @@ func (c *API) RefreshToken(request RefreshTokenRequest) (RefreshTokenResponse, e
 	if err != nil {
 		return RefreshTokenResponse{}, err
 	}
+	defer resp.Body.Close()
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -282,6 +284,7 @@ func (c *API) ListBrand(idToken string, request ListBrandRequest) (*ListBrandRes
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode < 300 {
 		respBody, err := ioutil.ReadAll(resp.Body)
@@ -336,6 +339,7 @@ func (c *API) GetDailyQuotes(idToken string, request GetDailyQuoteRequest) (*Get
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
