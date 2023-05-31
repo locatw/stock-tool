@@ -3,6 +3,7 @@ package jquants
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -19,7 +20,8 @@ const (
 )
 
 var (
-	timezone_jst = time.FixedZone("Asia/Tokyo", 9*60*60)
+	NotAuthorizedError = errors.New("Not authorized.")
+	timezone_jst       = time.FixedZone("Asia/Tokyo", 9*60*60)
 )
 
 type Date struct {
@@ -56,6 +58,40 @@ func (d Date) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("\"%s\"", d.Format())), nil
 }
 
+type response struct {
+	rawRequest  *http.Request
+	rawResponse *http.Response
+}
+
+func (r *response) StatusCode() int {
+	return r.rawResponse.StatusCode
+}
+
+type ErrorResponse struct {
+	Message string `json:"message"`
+
+	response
+}
+
+func (r *ErrorResponse) Error() string {
+	return r.Message
+}
+
+func newErrorResponse(resp *http.Response) (ErrorResponse, error) {
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return ErrorResponse{}, err
+	}
+
+	var errorResp ErrorResponse
+	err = json.Unmarshal(respBody, &errorResp)
+	if err != nil {
+		return ErrorResponse{}, err
+	}
+
+	return errorResp, nil
+}
+
 type AuthUserRequest struct {
 	MailAddress string `json:"mailaddress"`
 	Password    string `json:"password"`
@@ -80,6 +116,8 @@ type ListBrandRequest struct {
 
 type ListBrandResponse struct {
 	Brands []BrandInfo `json:"info"`
+
+	response
 }
 
 type BrandInfo struct {
@@ -107,6 +145,8 @@ type GetDailyQuoteRequest struct {
 type GetDailyQuoteResponse struct {
 	DailyQuotes   []DailyQuote `json:"daily_quotes"`
 	PaginationKey *string      `json:"pagination_key"`
+
+	response
 }
 
 type DailyQuote struct {
@@ -159,15 +199,15 @@ func (r *GetDailyQuoteRequest) WithPaginationKey(value string) *GetDailyQuoteReq
 	return r
 }
 
-type Client struct {
+type API struct {
 	httpClient *http.Client
 }
 
-func NewClient() *Client {
-	return &Client{httpClient: &http.Client{}}
+func NewAPI() *API {
+	return &API{httpClient: &http.Client{}}
 }
 
-func (c *Client) AuthUser(request AuthUserRequest) (AuthUserResponse, error) {
+func (c *API) AuthUser(request AuthUserRequest) (AuthUserResponse, error) {
 	req, err := newRequestBuilder(http.MethodPost, "token/auth_user").
 		withJSONBody(request).
 		build()
@@ -194,7 +234,7 @@ func (c *Client) AuthUser(request AuthUserRequest) (AuthUserResponse, error) {
 	return result, nil
 }
 
-func (c *Client) RefreshToken(request RefreshTokenRequest) (RefreshTokenResponse, error) {
+func (c *API) RefreshToken(request RefreshTokenRequest) (RefreshTokenResponse, error) {
 	req, err := newRequestBuilder(http.MethodPost, "token/auth_refresh").
 		addQueryParameter("refreshtoken", request.RefreshToken).
 		build()
@@ -221,7 +261,7 @@ func (c *Client) RefreshToken(request RefreshTokenRequest) (RefreshTokenResponse
 	return result, nil
 }
 
-func (c *Client) ListBrand(idToken string, request ListBrandRequest) (ListBrandResponse, error) {
+func (c *API) ListBrand(idToken string, request ListBrandRequest) (*ListBrandResponse, error) {
 	params := url.Values{}
 	if request.Code != nil {
 		params.Add("code", *request.Code)
@@ -235,29 +275,38 @@ func (c *Client) ListBrand(idToken string, request ListBrandRequest) (ListBrandR
 		addQueryParameters(params).
 		build()
 	if err != nil {
-		return ListBrandResponse{}, err
+		return nil, err
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return ListBrandResponse{}, err
+		return nil, err
 	}
 
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return ListBrandResponse{}, err
-	}
+	if resp.StatusCode < 300 {
+		respBody, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
 
-	var result ListBrandResponse
-	err = json.Unmarshal(respBody, &result)
-	if err != nil {
-		return ListBrandResponse{}, err
-	}
+		var result ListBrandResponse
+		err = json.Unmarshal(respBody, &result)
+		if err != nil {
+			return nil, err
+		}
 
-	return result, nil
+		return &result, nil
+	} else {
+		errResp, err := newErrorResponse(resp)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, &errResp
+	}
 }
 
-func (c *Client) GetDailyQuotes(idToken string, request GetDailyQuoteRequest) (GetDailyQuoteResponse, error) {
+func (c *API) GetDailyQuotes(idToken string, request GetDailyQuoteRequest) (*GetDailyQuoteResponse, error) {
 	params := url.Values{}
 	if request.Code != nil {
 		params.Add("code", *request.Code)
@@ -280,26 +329,26 @@ func (c *Client) GetDailyQuotes(idToken string, request GetDailyQuoteRequest) (G
 		addQueryParameters(params).
 		build()
 	if err != nil {
-		return GetDailyQuoteResponse{}, err
+		return nil, err
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return GetDailyQuoteResponse{}, err
+		return nil, err
 	}
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return GetDailyQuoteResponse{}, err
+		return nil, err
 	}
 
 	var result GetDailyQuoteResponse
 	err = json.Unmarshal(respBody, &result)
 	if err != nil {
-		return GetDailyQuoteResponse{}, err
+		return nil, err
 	}
 
-	return result, nil
+	return &result, nil
 }
 
 type requestBuilder struct {
@@ -432,4 +481,150 @@ func toDatePointer(value Date) *Date {
 	*p = value
 
 	return p
+}
+
+type Client struct {
+	api      API
+	authInfo authInfo
+}
+
+type authInfo struct {
+	MailAddress  string
+	Password     string
+	RefreshToken *string
+	IDToken      *string
+}
+
+func (ai *authInfo) ResetRefreshToken(value string) {
+	ai.RefreshToken = toStringPointer(value)
+}
+
+func (ai *authInfo) ResetIDToken(value string) {
+	ai.IDToken = toStringPointer(value)
+}
+
+func NewClient(mailAddress string, password string) *Client {
+	return &Client{
+		api: *NewAPI(),
+		authInfo: authInfo{
+			MailAddress:  mailAddress,
+			Password:     password,
+			RefreshToken: nil,
+			IDToken:      nil,
+		},
+	}
+}
+
+func (c *Client) Login() error {
+	err := c.authUser()
+	if err != nil {
+		return err
+	}
+
+	err = c.refreshToken()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) ListBrands(request ListBrandRequest) (*ListBrandResponse, error) {
+	if !c.IsAuthorized() {
+		return nil, NotAuthorizedError
+	}
+
+	resp, err := c.withRefreshToken(func() (interface{}, error) {
+		return c.api.ListBrand(*c.authInfo.IDToken, request)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.(*ListBrandResponse), nil
+}
+
+func (c *Client) GetDailyQuotes(request GetDailyQuoteRequest) (*GetDailyQuoteResponse, error) {
+	if !c.IsAuthorized() {
+		return nil, NotAuthorizedError
+	}
+
+	resp, err := c.withRefreshToken(func() (interface{}, error) {
+		return c.api.GetDailyQuotes(*c.authInfo.IDToken, request)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.(*GetDailyQuoteResponse), nil
+}
+
+func (c *Client) IsAuthorized() bool {
+	return c.authInfo.RefreshToken != nil && c.authInfo.IDToken != nil
+}
+
+func (c *Client) authUser() error {
+	authUserResp, err := c.api.AuthUser(
+		AuthUserRequest{
+			MailAddress: c.authInfo.MailAddress,
+			Password:    c.authInfo.Password,
+		})
+	if err != nil {
+		return err
+	}
+	c.authInfo.ResetRefreshToken(authUserResp.RefreshToken)
+
+	return nil
+}
+
+func (c *Client) refreshToken() error {
+	refreshTokenResp, err := c.api.RefreshToken(RefreshTokenRequest{RefreshToken: *c.authInfo.RefreshToken})
+	if err != nil {
+		return err
+	}
+
+	c.authInfo.ResetIDToken(refreshTokenResp.IDToken)
+
+	return nil
+}
+
+func (c *Client) withRefreshToken(requestFunc func() (interface{}, error)) (interface{}, error) {
+	for {
+		{
+			resp, err := requestFunc()
+			if err == nil {
+				return resp, nil
+			}
+
+			var errResp *ErrorResponse
+			if !errors.As(err, &errResp) {
+				return nil, err
+			} else if errResp.StatusCode() != 401 {
+				return nil, errResp
+			}
+		}
+
+		{
+			err := c.refreshToken()
+			if err == nil {
+				continue
+			}
+
+			var errResp *ErrorResponse
+			if !errors.As(err, &errResp) {
+				return &ListBrandResponse{}, err
+			} else if errResp.StatusCode() != 401 {
+				return nil, errResp
+			}
+		}
+
+		{
+			err := c.authUser()
+			if err == nil {
+				continue
+			}
+
+			return nil, err
+		}
+	}
 }

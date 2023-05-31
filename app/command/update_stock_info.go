@@ -13,18 +13,22 @@ const (
 )
 
 func UpdateStockInfo(db *gorm.DB, date string) error {
-	client := jquants.NewClient()
-	token, err := login(client)
+	mailAddress := os.Getenv("JQUANTS_MAIL_ADDRESS")
+	password := os.Getenv("JQUANTS_PASSWORD")
+
+	client := jquants.NewClient(mailAddress, password)
+
+	err := client.Login()
 	if err != nil {
 		return err
 	}
 
-	err = updateBrands(client, token, db)
+	err = updateBrands(client, db)
 	if err != nil {
 		return err
 	}
 
-	err = updatePrices(client, token, db, date)
+	err = updatePrices(client, db, date)
 	if err != nil {
 		return err
 	}
@@ -32,8 +36,8 @@ func UpdateStockInfo(db *gorm.DB, date string) error {
 	return nil
 }
 
-func updateBrands(client *jquants.Client, token string, db *gorm.DB) error {
-	brands, err := client.ListBrand(token, jquants.ListBrandRequest{})
+func updateBrands(client *jquants.Client, db *gorm.DB) error {
+	brands, err := client.ListBrands(jquants.ListBrandRequest{})
 	if err != nil {
 		return err
 	}
@@ -69,7 +73,7 @@ func updateBrands(client *jquants.Client, token string, db *gorm.DB) error {
 	return nil
 }
 
-func updatePrices(client *jquants.Client, token string, db *gorm.DB, date string) error {
+func updatePrices(client *jquants.Client, db *gorm.DB, date string) error {
 	targetDate, err := jquants.NewDateFromString(date)
 	if err != nil {
 		return err
@@ -78,7 +82,7 @@ func updatePrices(client *jquants.Client, token string, db *gorm.DB, date string
 	req := jquants.NewGetDailyQuoteRequestByDate(targetDate)
 	err = db.Transaction(func(tx *gorm.DB) error {
 		for {
-			resp, err := client.GetDailyQuotes(token, req)
+			resp, err := client.GetDailyQuotes(req)
 			if err != nil {
 				return err
 			}
@@ -120,23 +124,7 @@ func updatePrices(client *jquants.Client, token string, db *gorm.DB, date string
 	return nil
 }
 
-func login(client *jquants.Client) (string, error) {
-	mailAddress := os.Getenv("JQUANTS_MAIL_ADDRESS")
-	password := os.Getenv("JQUANTS_PASSWORD")
-	authUserResp, err := client.AuthUser(jquants.AuthUserRequest{MailAddress: mailAddress, Password: password})
-	if err != nil {
-		return "", err
-	}
-
-	refreshTokenResp, err := client.RefreshToken(jquants.RefreshTokenRequest{RefreshToken: authUserResp.RefreshToken})
-	if err != nil {
-		return "", err
-	}
-
-	return refreshTokenResp.IDToken, nil
-}
-
-func convertBrands(fromValues jquants.ListBrandResponse) []storage.Brand {
+func convertBrands(fromValues *jquants.ListBrandResponse) []storage.Brand {
 	brands := []storage.Brand{}
 	for _, from := range fromValues.Brands {
 		brand := storage.Brand{
@@ -159,7 +147,7 @@ func convertBrands(fromValues jquants.ListBrandResponse) []storage.Brand {
 	return brands
 }
 
-func convertPrices(fromValues jquants.GetDailyQuoteResponse) []storage.Price {
+func convertPrices(fromValues *jquants.GetDailyQuoteResponse) []storage.Price {
 	prices := []storage.Price{}
 	for _, from := range fromValues.DailyQuotes {
 		price := storage.Price{
