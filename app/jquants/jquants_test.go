@@ -57,45 +57,69 @@ func (m *httpClientMock) Do(request *http.Request) (*http.Response, error) {
 }
 
 func Test_API_AuthUser(t *testing.T) {
-	req := AuthUserRequest{
-		MailAddress: "user1@mail.test",
-		Password:    "password",
-	}
 	token := "token"
+	errorMessage := "Unexpected error. Please try again later."
 
-	contents := fmt.Sprintf(`{"refreshToken": "%s"}`, token)
-	respBody := ioutil.NopCloser(bytes.NewReader([]byte(contents)))
-	defer respBody.Close()
-
-	rawResp := http.Response{
-		Body:       respBody,
-		StatusCode: 200,
+	params := []struct {
+		respStatusCode   int
+		respBodyContents string
+		respBody         interface{}
+	}{
+		{
+			200,
+			fmt.Sprintf(`{"refreshToken": "%s"}`, token),
+			AuthUserResponseBody{RefreshToken: token},
+		},
+		{
+			500,
+			fmt.Sprintf(`{"message":"%s"}`, errorMessage),
+			ErrorResponseBody{Message: errorMessage},
+		},
 	}
 
-	httpClientMock := new(httpClientMock)
-	httpClientMock.On(
-		"Do",
-		mock.MatchedBy(requestMatcher{
-			ExpectedMethod: http.MethodPost,
-			ExpectedURL:    fmt.Sprintf("%s/token/auth_user", baseUrl),
-			ExpectedHeader: map[string][]string{
-				"Content-Type": {
-					"application/json",
+	for _, param := range params {
+		req := AuthUserRequest{
+			MailAddress: "user1@mail.test",
+			Password:    "password",
+		}
+
+		rawResp := makeResponse(param.respStatusCode, param.respBodyContents)
+		defer rawResp.Body.Close()
+
+		httpClientMock := new(httpClientMock)
+		httpClientMock.On(
+			"Do",
+			mock.MatchedBy(requestMatcher{
+				ExpectedMethod: http.MethodPost,
+				ExpectedURL:    fmt.Sprintf("%s/token/auth_user", baseUrl),
+				ExpectedHeader: map[string][]string{
+					"Content-Type": {
+						"application/json",
+					},
 				},
-			},
-			ExpectedBodyContents: toStringPointer(
-				fmt.Sprintf(`{"mailaddress":"%s","password":"%s"}`, req.MailAddress, req.Password),
-			),
-		}.ToFunc()),
-	).Return(&rawResp, nil)
+				ExpectedBodyContents: toStringPointer(
+					fmt.Sprintf(`{"mailaddress":"%s","password":"%s"}`, req.MailAddress, req.Password),
+				),
+			}.ToFunc()),
+		).Return(rawResp, nil)
 
-	api := &API{httpClient: httpClientMock}
+		api := &API{httpClient: httpClientMock}
 
-	resp, err := api.AuthUser(req)
+		resp, err := api.AuthUser(req)
 
-	assert.Nil(t, err)
-	assert.Equal(t, rawResp.StatusCode, resp.StatusCode())
-	assert.Equal(t, AuthUserResponseBody{RefreshToken: token}, resp.Body)
+		assert.Nil(t, err)
+		assert.Equal(t, rawResp.StatusCode, resp.StatusCode())
+		assert.Equal(t, param.respBody, resp.Body)
+	}
+}
+
+func makeResponse(statusCode int, bodyContents string) *http.Response {
+	respBody := ioutil.NopCloser(bytes.NewReader([]byte(bodyContents)))
+
+	return &http.Response{
+		Body:       respBody,
+		StatusCode: statusCode,
+	}
 }
 
 type requestMatcher struct {
