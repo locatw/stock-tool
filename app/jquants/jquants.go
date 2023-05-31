@@ -203,8 +203,12 @@ func (r *GetDailyQuoteRequest) WithPaginationKey(value string) *GetDailyQuoteReq
 	return r
 }
 
+type httpClient interface {
+	Do(request *http.Request) (*http.Response, error)
+}
+
 type API struct {
-	httpClient *http.Client
+	httpClient httpClient
 }
 
 func NewAPI() *API {

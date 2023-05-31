@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestDateUnmarshal(t *testing.T) {
@@ -32,7 +33,7 @@ func TestDateMarshal(t *testing.T) {
 
 func Test_newErrorResponseBody(t *testing.T) {
 	message := "error message"
-	contents := fmt.Sprintf("{\"message\": \"%s\"}", message)
+	contents := fmt.Sprintf(`{"message": "%s"}`, message)
 
 	body := ioutil.NopCloser(bytes.NewReader([]byte(contents)))
 	defer body.Close()
@@ -43,4 +44,124 @@ func Test_newErrorResponseBody(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, message, result.Message)
+}
+
+type httpClientMock struct {
+	mock.Mock
+}
+
+func (m *httpClientMock) Do(request *http.Request) (*http.Response, error) {
+	result := m.Called(request)
+
+	return result.Get(0).(*http.Response), result.Error(1)
+}
+
+func Test_API_AuthUser(t *testing.T) {
+	req := AuthUserRequest{
+		MailAddress: "user1@mail.test",
+		Password:    "password",
+	}
+	token := "token"
+
+	contents := fmt.Sprintf(`{"refreshToken": "%s"}`, token)
+	respBody := ioutil.NopCloser(bytes.NewReader([]byte(contents)))
+	defer respBody.Close()
+
+	rawResp := http.Response{
+		Body:       respBody,
+		StatusCode: 200,
+	}
+
+	httpClientMock := new(httpClientMock)
+	httpClientMock.On(
+		"Do",
+		mock.MatchedBy(requestMatcher{
+			ExpectedMethod: http.MethodPost,
+			ExpectedURL:    fmt.Sprintf("%s/token/auth_user", baseUrl),
+			ExpectedHeader: map[string][]string{
+				"Content-Type": {
+					"application/json",
+				},
+			},
+			ExpectedBodyContents: toStringPointer(
+				fmt.Sprintf(`{"mailaddress":"%s","password":"%s"}`, req.MailAddress, req.Password),
+			),
+		}.ToFunc()),
+	).Return(&rawResp, nil)
+
+	api := &API{httpClient: httpClientMock}
+
+	resp, err := api.AuthUser(req)
+
+	assert.Nil(t, err)
+	assert.Equal(t, rawResp.StatusCode, resp.StatusCode())
+	assert.Equal(t, AuthUserResponseBody{RefreshToken: token}, resp.Body)
+}
+
+type requestMatcher struct {
+	ExpectedMethod       string
+	ExpectedURL          string
+	ExpectedHeader       http.Header
+	ExpectedBodyContents *string
+}
+
+func (m requestMatcher) Matches(request *http.Request) bool {
+	if request.Method != http.MethodPost {
+		return false
+	}
+
+	if request.URL.String() != m.ExpectedURL {
+		return false
+	}
+
+	if len(request.Header) != len(m.ExpectedHeader) {
+		return false
+	}
+
+	for expectedKey, expectedValues := range m.ExpectedHeader {
+		values, ok := request.Header[expectedKey]
+		if !ok {
+			return false
+		}
+
+		if len(values) != len(expectedValues) {
+			return false
+		}
+
+		for _, expectedValue := range expectedValues {
+			found := false
+			for _, value := range values {
+				if value == expectedValue {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return false
+			}
+		}
+	}
+
+	if m.ExpectedBodyContents != nil {
+		bodyData, err := ioutil.ReadAll(request.Body)
+		if err != nil {
+			return false
+		}
+
+		if string(bodyData) != *m.ExpectedBodyContents {
+			return false
+		}
+	} else {
+		if request.Body != nil {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (m requestMatcher) ToFunc() func(*http.Request) bool {
+	return func(request *http.Request) bool {
+		return m.Matches(request)
+	}
 }
