@@ -77,27 +77,27 @@ func newResponse(request *http.Request, response *http.Response, responseBody in
 	}
 }
 
-type ErrorResponse struct {
+type ErrorResponseBody struct {
 	Message string `json:"message"`
 }
 
-func (r *ErrorResponse) Error() string {
+func (r *ErrorResponseBody) Error() string {
 	return r.Message
 }
 
-func newErrorResponse(resp *http.Response) (*ErrorResponse, error) {
+func newErrorResponseBody(resp *http.Response) (*ErrorResponseBody, error) {
 	bodyData, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	var respBody ErrorResponse
-	err = json.Unmarshal(bodyData, &respBody)
+	var body ErrorResponseBody
+	err = json.Unmarshal(bodyData, &body)
 	if err != nil {
 		return nil, err
 	}
 
-	return &respBody, nil
+	return &body, nil
 }
 
 type AuthUserRequest struct {
@@ -105,7 +105,7 @@ type AuthUserRequest struct {
 	Password    string `json:"password"`
 }
 
-type AuthUserResponse struct {
+type AuthUserResponseBody struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
@@ -113,7 +113,7 @@ type RefreshTokenRequest struct {
 	RefreshToken string
 }
 
-type RefreshTokenResponse struct {
+type RefreshTokenResponseBody struct {
 	IDToken string `json:"idToken"`
 }
 
@@ -122,7 +122,7 @@ type ListBrandRequest struct {
 	Date *Date   `json:"date"`
 }
 
-type ListBrandResponse struct {
+type ListBrandResponseBody struct {
 	Brands []BrandInfo `json:"info"`
 }
 
@@ -148,7 +148,7 @@ type GetDailyQuoteRequest struct {
 	PaginationKey *string `json:"pagination_key"`
 }
 
-type GetDailyQuoteResponse struct {
+type GetDailyQuoteResponseBody struct {
 	DailyQuotes   []DailyQuote `json:"daily_quotes"`
 	PaginationKey *string      `json:"pagination_key"`
 }
@@ -226,21 +226,21 @@ func (c *API) AuthUser(request AuthUserRequest) (*Response, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 300 {
-		var respBody AuthUserResponse
-		err = makeResponseBody(resp, &respBody)
+		var body AuthUserResponseBody
+		err = makeResponseBody(resp, &body)
 		if err != nil {
 			return nil, err
 		}
 
-		return newResponse(req, resp, respBody), nil
+		return newResponse(req, resp, body), nil
 	} else {
-		var respBody ErrorResponse
-		err = makeResponseBody(resp, &respBody)
+		var body ErrorResponseBody
+		err = makeResponseBody(resp, &body)
 		if err != nil {
 			return nil, err
 		}
 
-		return newResponse(req, resp, respBody), nil
+		return newResponse(req, resp, body), nil
 	}
 }
 
@@ -259,21 +259,21 @@ func (c *API) RefreshToken(request RefreshTokenRequest) (*Response, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 300 {
-		var respBody RefreshTokenResponse
-		err = makeResponseBody(resp, &respBody)
+		var body RefreshTokenResponseBody
+		err = makeResponseBody(resp, &body)
 		if err != nil {
 			return nil, err
 		}
 
-		return newResponse(req, resp, respBody), nil
+		return newResponse(req, resp, body), nil
 	} else {
-		var respBody ErrorResponse
-		err = makeResponseBody(resp, &respBody)
+		var body ErrorResponseBody
+		err = makeResponseBody(resp, &body)
 		if err != nil {
 			return nil, err
 		}
 
-		return newResponse(req, resp, respBody), nil
+		return newResponse(req, resp, body), nil
 	}
 }
 
@@ -301,21 +301,21 @@ func (c *API) ListBrand(idToken string, request ListBrandRequest) (*Response, er
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 300 {
-		var respBody ListBrandResponse
-		err = makeResponseBody(resp, &respBody)
+		var body ListBrandResponseBody
+		err = makeResponseBody(resp, &body)
 		if err != nil {
 			return nil, err
 		}
 
-		return newResponse(req, resp, respBody), nil
+		return newResponse(req, resp, body), nil
 	} else {
-		var respBody ErrorResponse
-		err = makeResponseBody(resp, &respBody)
+		var body ErrorResponseBody
+		err = makeResponseBody(resp, &body)
 		if err != nil {
 			return nil, err
 		}
 
-		return newResponse(req, resp, respBody), nil
+		return newResponse(req, resp, body), nil
 	}
 }
 
@@ -352,21 +352,21 @@ func (c *API) GetDailyQuotes(idToken string, request GetDailyQuoteRequest) (*Res
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 300 {
-		var respBody GetDailyQuoteResponse
-		err = makeResponseBody(resp, &respBody)
+		var body GetDailyQuoteResponseBody
+		err = makeResponseBody(resp, &body)
 		if err != nil {
 			return nil, err
 		}
 
-		return newResponse(req, resp, respBody), nil
+		return newResponse(req, resp, body), nil
 	} else {
-		var respBody ErrorResponse
-		err = makeResponseBody(resp, &respBody)
+		var body ErrorResponseBody
+		err = makeResponseBody(resp, &body)
 		if err != nil {
 			return nil, err
 		}
 
-		return newResponse(req, resp, respBody), nil
+		return newResponse(req, resp, body), nil
 	}
 }
 
@@ -550,7 +550,7 @@ func (c *Client) Login() error {
 	}
 
 	switch body := authUserResp.Body.(type) {
-	case ErrorResponse:
+	case ErrorResponseBody:
 		return errors.New(body.Message)
 	}
 
@@ -560,7 +560,7 @@ func (c *Client) Login() error {
 	}
 
 	switch body := refreshTokenResp.Body.(type) {
-	case ErrorResponse:
+	case ErrorResponseBody:
 		return errors.New(body.Message)
 	}
 
@@ -613,7 +613,7 @@ func (c *Client) authUser() (*Response, error) {
 	}
 
 	switch body := resp.Body.(type) {
-	case AuthUserResponse:
+	case AuthUserResponseBody:
 		c.authInfo.ResetRefreshToken(body.RefreshToken)
 	}
 
@@ -631,7 +631,7 @@ func (c *Client) refreshToken() (*Response, error) {
 	}
 
 	switch body := resp.Body.(type) {
-	case RefreshTokenResponse:
+	case RefreshTokenResponseBody:
 		c.authInfo.ResetIDToken(body.IDToken)
 	}
 
@@ -663,17 +663,17 @@ func (c *Client) reAuth() error {
 		return err
 	}
 
-	switch r := refreshTokenResp.Body.(type) {
-	case AuthUserResponse:
+	switch body := refreshTokenResp.Body.(type) {
+	case AuthUserResponseBody:
 		return nil
-	case ErrorResponse:
+	case ErrorResponseBody:
 		// TODO: investigate the HTTP status code when the refresh token has expired.
 		if refreshTokenResp.StatusCode() != 401 {
-			message := "Failed to refresh token: " + r.Message
+			message := "Failed to refresh token: " + body.Message
 			return errors.New(message)
 		}
 	default:
-		message := fmt.Sprintf("Unknown response body: %+v", r)
+		message := fmt.Sprintf("Unknown response body: %+v", body)
 		return errors.New(message)
 	}
 
@@ -682,14 +682,14 @@ func (c *Client) reAuth() error {
 		return err
 	}
 
-	switch r := authUserResp.Body.(type) {
-	case AuthUserResponse:
+	switch body := authUserResp.Body.(type) {
+	case AuthUserResponseBody:
 		return nil
-	case ErrorResponse:
-		message := "Failed to authenticate user: " + r.Message
+	case ErrorResponseBody:
+		message := "Failed to authenticate user: " + body.Message
 		return errors.New(message)
 	default:
-		message := fmt.Sprintf("Unknown response body: %+v", r)
+		message := fmt.Sprintf("Unknown response body: %+v", body)
 		return errors.New(message)
 	}
 }

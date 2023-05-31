@@ -43,11 +43,11 @@ func updateBrands(client *jquants.Client, db *gorm.DB) error {
 		return err
 	}
 
-	var brands *jquants.ListBrandResponse
+	var brands *jquants.ListBrandResponseBody
 	switch body := resp.Body.(type) {
-	case jquants.ListBrandResponse:
+	case jquants.ListBrandResponseBody:
 		brands = &body
-	case jquants.ErrorResponse:
+	case jquants.ErrorResponseBody:
 		return errors.New(body.Message)
 	}
 
@@ -96,11 +96,11 @@ func updatePrices(client *jquants.Client, db *gorm.DB, date string) error {
 				return err
 			}
 
-			var prices *jquants.GetDailyQuoteResponse
+			var prices *jquants.GetDailyQuoteResponseBody
 			switch body := resp.Body.(type) {
-			case jquants.GetDailyQuoteResponse:
+			case jquants.GetDailyQuoteResponseBody:
 				prices = &body
-			case jquants.ErrorResponse:
+			case jquants.ErrorResponseBody:
 				return errors.New(body.Message)
 			}
 
@@ -141,7 +141,7 @@ func updatePrices(client *jquants.Client, db *gorm.DB, date string) error {
 	return nil
 }
 
-func convertBrands(fromValues *jquants.ListBrandResponse) []storage.Brand {
+func convertBrands(fromValues *jquants.ListBrandResponseBody) []storage.Brand {
 	brands := []storage.Brand{}
 	for _, from := range fromValues.Brands {
 		brand := storage.Brand{
@@ -164,7 +164,7 @@ func convertBrands(fromValues *jquants.ListBrandResponse) []storage.Brand {
 	return brands
 }
 
-func convertPrices(fromValues *jquants.GetDailyQuoteResponse) []storage.Price {
+func convertPrices(fromValues *jquants.GetDailyQuoteResponseBody) []storage.Price {
 	prices := []storage.Price{}
 	for _, from := range fromValues.DailyQuotes {
 		price := storage.Price{
