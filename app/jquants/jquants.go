@@ -58,38 +58,46 @@ func (d Date) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("\"%s\"", d.Format())), nil
 }
 
-type response struct {
+type Response struct {
+	Body interface{}
+
 	rawRequest  *http.Request
 	rawResponse *http.Response
 }
 
-func (r *response) StatusCode() int {
+func (r *Response) StatusCode() int {
 	return r.rawResponse.StatusCode
+}
+
+func newResponse(request *http.Request, response *http.Response, responseBody interface{}) *Response {
+	return &Response{
+		Body:        responseBody,
+		rawRequest:  request,
+		rawResponse: response,
+	}
 }
 
 type ErrorResponse struct {
 	Message string `json:"message"`
-
-	response
 }
 
 func (r *ErrorResponse) Error() string {
 	return r.Message
 }
 
-func newErrorResponse(resp *http.Response) (ErrorResponse, error) {
-	respBody, err := ioutil.ReadAll(resp.Body)
+func newErrorResponse(resp *http.Response) (*ErrorResponse, error) {
+	bodyData, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return ErrorResponse{}, err
+		return nil, err
 	}
 
-	var errorResp ErrorResponse
-	err = json.Unmarshal(respBody, &errorResp)
+	var respBody ErrorResponse
+	err = json.Unmarshal(bodyData, &respBody)
 	if err != nil {
-		return ErrorResponse{}, err
+		return nil, err
 	}
 
-	return errorResp, nil
+	return &respBody, nil
 }
 
 type AuthUserRequest struct {
@@ -116,8 +124,6 @@ type ListBrandRequest struct {
 
 type ListBrandResponse struct {
 	Brands []BrandInfo `json:"info"`
-
-	response
 }
 
 type BrandInfo struct {
@@ -145,8 +151,6 @@ type GetDailyQuoteRequest struct {
 type GetDailyQuoteResponse struct {
 	DailyQuotes   []DailyQuote `json:"daily_quotes"`
 	PaginationKey *string      `json:"pagination_key"`
-
-	response
 }
 
 type DailyQuote struct {
@@ -207,63 +211,73 @@ func NewAPI() *API {
 	return &API{httpClient: &http.Client{}}
 }
 
-func (c *API) AuthUser(request AuthUserRequest) (AuthUserResponse, error) {
+func (c *API) AuthUser(request AuthUserRequest) (*Response, error) {
 	req, err := newRequestBuilder(http.MethodPost, "token/auth_user").
 		withJSONBody(request).
 		build()
 	if err != nil {
-		return AuthUserResponse{}, err
+		return nil, err
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return AuthUserResponse{}, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return AuthUserResponse{}, err
-	}
+	if resp.StatusCode < 300 {
+		var respBody AuthUserResponse
+		err = makeResponseBody(resp, &respBody)
+		if err != nil {
+			return nil, err
+		}
 
-	var result AuthUserResponse
-	err = json.Unmarshal(respBody, &result)
-	if err != nil {
-		return AuthUserResponse{}, err
-	}
+		return newResponse(req, resp, respBody), nil
+	} else {
+		var respBody ErrorResponse
+		err = makeResponseBody(resp, &respBody)
+		if err != nil {
+			return nil, err
+		}
 
-	return result, nil
+		return newResponse(req, resp, respBody), nil
+	}
 }
 
-func (c *API) RefreshToken(request RefreshTokenRequest) (RefreshTokenResponse, error) {
+func (c *API) RefreshToken(request RefreshTokenRequest) (*Response, error) {
 	req, err := newRequestBuilder(http.MethodPost, "token/auth_refresh").
 		addQueryParameter("refreshtoken", request.RefreshToken).
 		build()
 	if err != nil {
-		return RefreshTokenResponse{}, err
+		return nil, err
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return RefreshTokenResponse{}, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return RefreshTokenResponse{}, err
-	}
+	if resp.StatusCode < 300 {
+		var respBody RefreshTokenResponse
+		err = makeResponseBody(resp, &respBody)
+		if err != nil {
+			return nil, err
+		}
 
-	var result RefreshTokenResponse
-	err = json.Unmarshal(respBody, &result)
-	if err != nil {
-		return RefreshTokenResponse{}, err
-	}
+		return newResponse(req, resp, respBody), nil
+	} else {
+		var respBody ErrorResponse
+		err = makeResponseBody(resp, &respBody)
+		if err != nil {
+			return nil, err
+		}
 
-	return result, nil
+		return newResponse(req, resp, respBody), nil
+	}
 }
 
-func (c *API) ListBrand(idToken string, request ListBrandRequest) (*ListBrandResponse, error) {
+func (c *API) ListBrand(idToken string, request ListBrandRequest) (*Response, error) {
 	params := url.Values{}
 	if request.Code != nil {
 		params.Add("code", *request.Code)
@@ -287,29 +301,25 @@ func (c *API) ListBrand(idToken string, request ListBrandRequest) (*ListBrandRes
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 300 {
-		respBody, err := ioutil.ReadAll(resp.Body)
+		var respBody ListBrandResponse
+		err = makeResponseBody(resp, &respBody)
 		if err != nil {
 			return nil, err
 		}
 
-		var result ListBrandResponse
-		err = json.Unmarshal(respBody, &result)
-		if err != nil {
-			return nil, err
-		}
-
-		return &result, nil
+		return newResponse(req, resp, respBody), nil
 	} else {
-		errResp, err := newErrorResponse(resp)
+		var respBody ErrorResponse
+		err = makeResponseBody(resp, &respBody)
 		if err != nil {
 			return nil, err
 		}
 
-		return nil, &errResp
+		return newResponse(req, resp, respBody), nil
 	}
 }
 
-func (c *API) GetDailyQuotes(idToken string, request GetDailyQuoteRequest) (*GetDailyQuoteResponse, error) {
+func (c *API) GetDailyQuotes(idToken string, request GetDailyQuoteRequest) (*Response, error) {
 	params := url.Values{}
 	if request.Code != nil {
 		params.Add("code", *request.Code)
@@ -341,18 +351,32 @@ func (c *API) GetDailyQuotes(idToken string, request GetDailyQuoteRequest) (*Get
 	}
 	defer resp.Body.Close()
 
-	respBody, err := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode < 300 {
+		var respBody GetDailyQuoteResponse
+		err = makeResponseBody(resp, &respBody)
+		if err != nil {
+			return nil, err
+		}
+
+		return newResponse(req, resp, respBody), nil
+	} else {
+		var respBody ErrorResponse
+		err = makeResponseBody(resp, &respBody)
+		if err != nil {
+			return nil, err
+		}
+
+		return newResponse(req, resp, respBody), nil
+	}
+}
+
+func makeResponseBody(resp *http.Response, body interface{}) error {
+	bodyData, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	var result GetDailyQuoteResponse
-	err = json.Unmarshal(respBody, &result)
-	if err != nil {
-		return nil, err
-	}
-
-	return &result, nil
+	return json.Unmarshal(bodyData, body)
 }
 
 type requestBuilder struct {
@@ -520,115 +544,152 @@ func NewClient(mailAddress string, password string) *Client {
 }
 
 func (c *Client) Login() error {
-	err := c.authUser()
+	authUserResp, err := c.authUser()
 	if err != nil {
 		return err
 	}
 
-	err = c.refreshToken()
+	switch body := authUserResp.Body.(type) {
+	case ErrorResponse:
+		return errors.New(body.Message)
+	}
+
+	refreshTokenResp, err := c.refreshToken()
 	if err != nil {
 		return err
+	}
+
+	switch body := refreshTokenResp.Body.(type) {
+	case ErrorResponse:
+		return errors.New(body.Message)
 	}
 
 	return nil
 }
 
-func (c *Client) ListBrands(request ListBrandRequest) (*ListBrandResponse, error) {
+func (c *Client) ListBrands(request ListBrandRequest) (*Response, error) {
 	if !c.IsAuthorized() {
 		return nil, NotAuthorizedError
 	}
 
-	resp, err := c.withRefreshToken(func() (interface{}, error) {
+	resp, err := c.withRefreshToken(func() (*Response, error) {
 		return c.api.ListBrand(*c.authInfo.IDToken, request)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return resp.(*ListBrandResponse), nil
+	return resp, nil
 }
 
-func (c *Client) GetDailyQuotes(request GetDailyQuoteRequest) (*GetDailyQuoteResponse, error) {
+func (c *Client) GetDailyQuotes(request GetDailyQuoteRequest) (*Response, error) {
 	if !c.IsAuthorized() {
 		return nil, NotAuthorizedError
 	}
 
-	resp, err := c.withRefreshToken(func() (interface{}, error) {
+	resp, err := c.withRefreshToken(func() (*Response, error) {
 		return c.api.GetDailyQuotes(*c.authInfo.IDToken, request)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return resp.(*GetDailyQuoteResponse), nil
+	return resp, nil
 }
 
 func (c *Client) IsAuthorized() bool {
 	return c.authInfo.RefreshToken != nil && c.authInfo.IDToken != nil
 }
 
-func (c *Client) authUser() error {
-	authUserResp, err := c.api.AuthUser(
+func (c *Client) authUser() (*Response, error) {
+	resp, err := c.api.AuthUser(
 		AuthUserRequest{
 			MailAddress: c.authInfo.MailAddress,
 			Password:    c.authInfo.Password,
-		})
+		},
+	)
 	if err != nil {
-		return err
-	}
-	c.authInfo.ResetRefreshToken(authUserResp.RefreshToken)
-
-	return nil
-}
-
-func (c *Client) refreshToken() error {
-	refreshTokenResp, err := c.api.RefreshToken(RefreshTokenRequest{RefreshToken: *c.authInfo.RefreshToken})
-	if err != nil {
-		return err
+		return nil, err
 	}
 
-	c.authInfo.ResetIDToken(refreshTokenResp.IDToken)
+	switch body := resp.Body.(type) {
+	case AuthUserResponse:
+		c.authInfo.ResetRefreshToken(body.RefreshToken)
+	}
 
-	return nil
+	return resp, nil
 }
 
-func (c *Client) withRefreshToken(requestFunc func() (interface{}, error)) (interface{}, error) {
+func (c *Client) refreshToken() (*Response, error) {
+	resp, err := c.api.RefreshToken(
+		RefreshTokenRequest{
+			RefreshToken: *c.authInfo.RefreshToken,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	switch body := resp.Body.(type) {
+	case RefreshTokenResponse:
+		c.authInfo.ResetIDToken(body.IDToken)
+	}
+
+	return resp, nil
+}
+
+func (c *Client) withRefreshToken(requestFunc func() (*Response, error)) (*Response, error) {
 	for {
-		{
-			resp, err := requestFunc()
-			if err == nil {
-				return resp, nil
-			}
-
-			var errResp *ErrorResponse
-			if !errors.As(err, &errResp) {
-				return nil, err
-			} else if errResp.StatusCode() != 401 {
-				return nil, errResp
-			}
-		}
-
-		{
-			err := c.refreshToken()
-			if err == nil {
-				continue
-			}
-
-			var errResp *ErrorResponse
-			if !errors.As(err, &errResp) {
-				return &ListBrandResponse{}, err
-			} else if errResp.StatusCode() != 401 {
-				return nil, errResp
-			}
-		}
-
-		{
-			err := c.authUser()
-			if err == nil {
-				continue
-			}
-
+		resp, err := requestFunc()
+		if err != nil {
 			return nil, err
 		}
+		if resp.StatusCode() == 401 {
+			err = c.reAuth()
+			if err != nil {
+				return nil, err
+			}
+
+			continue
+		}
+
+		return resp, nil
+	}
+}
+
+func (c *Client) reAuth() error {
+	refreshTokenResp, err := c.refreshToken()
+	if err != nil {
+		return err
+	}
+
+	switch r := refreshTokenResp.Body.(type) {
+	case AuthUserResponse:
+		return nil
+	case ErrorResponse:
+		// TODO: investigate the HTTP status code when the refresh token has expired.
+		if refreshTokenResp.StatusCode() != 401 {
+			message := "Failed to refresh token: " + r.Message
+			return errors.New(message)
+		}
+	default:
+		message := fmt.Sprintf("Unknown response body: %+v", r)
+		return errors.New(message)
+	}
+
+	authUserResp, err := c.authUser()
+	if err != nil {
+		return err
+	}
+
+	switch r := authUserResp.Body.(type) {
+	case AuthUserResponse:
+		return nil
+	case ErrorResponse:
+		message := "Failed to authenticate user: " + r.Message
+		return errors.New(message)
+	default:
+		message := fmt.Sprintf("Unknown response body: %+v", r)
+		return errors.New(message)
 	}
 }

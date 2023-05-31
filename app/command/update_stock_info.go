@@ -1,6 +1,7 @@
 package command
 
 import (
+	"errors"
 	"os"
 	"stock-tool/jquants"
 	"stock-tool/storage"
@@ -37,9 +38,17 @@ func UpdateStockInfo(db *gorm.DB, date string) error {
 }
 
 func updateBrands(client *jquants.Client, db *gorm.DB) error {
-	brands, err := client.ListBrands(jquants.ListBrandRequest{})
+	resp, err := client.ListBrands(jquants.ListBrandRequest{})
 	if err != nil {
 		return err
+	}
+
+	var brands *jquants.ListBrandResponse
+	switch body := resp.Body.(type) {
+	case jquants.ListBrandResponse:
+		brands = &body
+	case jquants.ErrorResponse:
+		return errors.New(body.Message)
 	}
 
 	records := convertBrands(brands)
@@ -87,7 +96,15 @@ func updatePrices(client *jquants.Client, db *gorm.DB, date string) error {
 				return err
 			}
 
-			records := convertPrices(resp)
+			var prices *jquants.GetDailyQuoteResponse
+			switch body := resp.Body.(type) {
+			case jquants.GetDailyQuoteResponse:
+				prices = &body
+			case jquants.ErrorResponse:
+				return errors.New(body.Message)
+			}
+
+			records := convertPrices(prices)
 
 			loopCount := len(records) / CHUNK_SIZE
 			remainder := len(records) % CHUNK_SIZE
@@ -108,10 +125,10 @@ func updatePrices(client *jquants.Client, db *gorm.DB, date string) error {
 				}
 			}
 
-			if resp.PaginationKey == nil {
+			if prices.PaginationKey == nil {
 				break
 			} else {
-				req.PaginationKey = resp.PaginationKey
+				req.PaginationKey = prices.PaginationKey
 			}
 		}
 
