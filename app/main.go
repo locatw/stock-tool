@@ -56,12 +56,6 @@ func main() {
 
 	cmd := os.Args[1]
 	switch cmd {
-	case "migrate":
-		err := command.MigrateDB(db)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
 	case "update-stock-info":
 		if len(os.Args) < 3 {
 			fmt.Println("Usage: jquants-study update-stock-info DATE")
