@@ -50,7 +50,7 @@ func init() {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: stock-tool COMMAND [COMMAND_ARGS]")
+		showUsage()
 		os.Exit(1)
 	}
 
@@ -58,7 +58,7 @@ func main() {
 	switch cmd {
 	case "update-stock-info":
 		if len(os.Args) < 3 {
-			fmt.Println("Usage: stock-tool update-stock-info DATE")
+			showUsage()
 			os.Exit(1)
 		}
 
@@ -69,6 +69,18 @@ func main() {
 		}
 	default:
 		fmt.Printf("Unknown command: %s\n", cmd)
+		fmt.Println("")
+		showUsage()
 		os.Exit(1)
 	}
+}
+
+func showUsage() {
+	fmt.Println("Usage: stock-tool COMMAND")
+	fmt.Println("")
+	fmt.Println("Commands:")
+	fmt.Println("  update-stock-info DATE")
+	fmt.Println("    Update stock information.")
+	fmt.Println("    Args:")
+	fmt.Println("      DATE  Update target date. Format is 'YYYY-MM-DD'.")
 }
