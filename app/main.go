@@ -50,7 +50,7 @@ func init() {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: jquants-study COMMAND [COMMAND_ARGS]")
+		fmt.Println("Usage: stock-tool COMMAND [COMMAND_ARGS]")
 		os.Exit(1)
 	}
 
@@ -58,7 +58,7 @@ func main() {
 	switch cmd {
 	case "update-stock-info":
 		if len(os.Args) < 3 {
-			fmt.Println("Usage: jquants-study update-stock-info DATE")
+			fmt.Println("Usage: stock-tool update-stock-info DATE")
 			os.Exit(1)
 		}
 
