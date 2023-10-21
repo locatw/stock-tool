@@ -16,5 +16,20 @@ services:
       - "${DB_GUI_PORT:-8081}:8081"
     depends_on:
       - db
+  migration:
+    build:
+      args:
+        UID: ${UID}
+        GID: ${GID}
+      context: ./migration
+      dockerfile: ../docker/migration/Dockerfile
+    environment:
+      - POSTGRES_DB=stock
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-1234}
+    volumes:
+      - ./migration/versions:/app/migration/versions
+      - ./migration/dbconfig.yml:/app/migration/dbconfig.yml
+    depends_on:
+      - db
 volumes:
   db-vol:

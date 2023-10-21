@@ -1,0 +1,32 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"cSpell.words": [
+			"dbname",
+			"godotenv",
+			"gorm",
+			"IFRS",
+			"JMIS",
+			"joho",
+			"jquants",
+			"mailaddress",
+			"primarykey",
+			"refreshtoken",
+			"sslmode",
+			"stretchr",
+			"testutils",
+			"Upsert",
+			"usecase"
+		],
+		"sql-formatter.dialect": "sql",
+		"sql-formatter.uppercase": true,
+		"[sql]": {
+			"editor.formatOnSave": true,
+			"editor.formatOnPaste": true,
+		},	
+	}
+}
