@@ -7,6 +7,7 @@ services:
       - POSTGRES_DB=stock
       - POSTGRES_PASSWORD=${DB_PASSWORD:-1234}
     volumes:
+      - ./docker/db/:/docker-entrypoint-initdb.d
       - db-vol:/var/lib/postgresql/data
   db-gui:
     image: sosedoff/pgweb
