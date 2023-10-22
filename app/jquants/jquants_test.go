@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
@@ -35,7 +35,7 @@ func Test_newErrorResponseBody(t *testing.T) {
 	message := "error message"
 	contents := fmt.Sprintf(`{"message": "%s"}`, message)
 
-	body := ioutil.NopCloser(bytes.NewReader([]byte(contents)))
+	body := io.NopCloser(bytes.NewReader([]byte(contents)))
 	defer body.Close()
 
 	resp := &http.Response{Body: body}
@@ -162,7 +162,7 @@ func Test_API_RefreshToken(t *testing.T) {
 }
 
 func makeResponse(statusCode int, bodyContents string) *http.Response {
-	respBody := ioutil.NopCloser(bytes.NewReader([]byte(bodyContents)))
+	respBody := io.NopCloser(bytes.NewReader([]byte(bodyContents)))
 
 	return &http.Response{
 		Body:       respBody,
@@ -215,7 +215,7 @@ func (m requestMatcher) Matches(request *http.Request) bool {
 	}
 
 	if m.ExpectedBodyContents != nil {
-		bodyData, err := ioutil.ReadAll(request.Body)
+		bodyData, err := io.ReadAll(request.Body)
 		if err != nil {
 			return false
 		}

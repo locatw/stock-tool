@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
@@ -86,7 +85,7 @@ func (r *ErrorResponseBody) Error() string {
 }
 
 func newErrorResponseBody(resp *http.Response) (*ErrorResponseBody, error) {
-	bodyData, err := ioutil.ReadAll(resp.Body)
+	bodyData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +374,7 @@ func (c *API) GetDailyQuotes(idToken string, request GetDailyQuoteRequest) (*Res
 }
 
 func makeResponseBody(resp *http.Response, body interface{}) error {
-	bodyData, err := ioutil.ReadAll(resp.Body)
+	bodyData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
