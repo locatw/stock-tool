@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"errors"
 	"fmt"
@@ -95,6 +96,25 @@ type Price struct {
 	TailColumns
 }
 
+type DB interface {
+	Transaction(fc func(tx DB) error, opts ...*sql.TxOptions) error
+	gorm() *gorm.DB
+}
+
+type postgresDB struct {
+	gormDB *gorm.DB
+}
+
+func (db *postgresDB) gorm() *gorm.DB {
+	return db.gormDB
+}
+
+func (db *postgresDB) Transaction(fc func(tx DB) error, opts ...*sql.TxOptions) error {
+	return db.gormDB.Transaction(func(tx *gorm.DB) error {
+		return fc(&postgresDB{gormDB: tx})
+	}, opts...)
+}
+
 type Config struct {
 	Host     string
 	Port     int
@@ -105,7 +125,7 @@ type Config struct {
 	TimeZone *time.Location
 }
 
-func Init(config Config) (*gorm.DB, error) {
+func Connect(config Config) (DB, error) {
 	dsn := fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s TimeZone=%s",
 		config.Host,
@@ -123,15 +143,15 @@ func Init(config Config) (*gorm.DB, error) {
 		config.TimeZone.String(),
 	)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	gormDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
 
-	return db, nil
+	return &postgresDB{gormDB: gormDB}, nil
 }
 
-func UpsertToBrands(db *gorm.DB, records []Brand) error {
+func UpsertToBrands(db DB, records []Brand) error {
 	schema, err := schema.Parse(&Brand{}, &sync.Map{}, schema.NamingStrategy{})
 	if err != nil {
 		fmt.Println(err)
@@ -155,7 +175,7 @@ func UpsertToBrands(db *gorm.DB, records []Brand) error {
 		updateColumns = append(updateColumns, field.DBName)
 	}
 
-	db.Clauses(clause.OnConflict{
+	db.gorm().Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "code"}},
 		DoUpdates: clause.AssignmentColumns(updateColumns),
 	}).Create(records)
@@ -163,7 +183,7 @@ func UpsertToBrands(db *gorm.DB, records []Brand) error {
 	return nil
 }
 
-func UpsertToPrice(db *gorm.DB, records []Price) error {
+func UpsertToPrice(db DB, records []Price) error {
 	schema, err := schema.Parse(&Price{}, &sync.Map{}, schema.NamingStrategy{})
 	if err != nil {
 		fmt.Println(err)
@@ -187,7 +207,7 @@ func UpsertToPrice(db *gorm.DB, records []Price) error {
 		updateColumns = append(updateColumns, field.DBName)
 	}
 
-	db.Clauses(clause.OnConflict{
+	db.gorm().Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "date"}, {Name: "code"}},
 		DoUpdates: clause.AssignmentColumns(updateColumns),
 	}).Create(records)

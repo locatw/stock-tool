@@ -11,11 +11,10 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/shopspring/decimal"
-	"gorm.io/gorm"
 )
 
 var (
-	db *gorm.DB
+	db storage.DB
 )
 
 func init() {
@@ -31,7 +30,7 @@ func init() {
 		os.Exit(1)
 	}
 
-	db, err = storage.Init(storage.Config{
+	db, err = storage.Connect(storage.Config{
 		Host:     os.Getenv("DB_HOST"),
 		Port:     port,
 		User:     os.Getenv("DB_USER"),

@@ -5,15 +5,13 @@ import (
 	"os"
 	"stock-tool/jquants"
 	"stock-tool/storage"
-
-	"gorm.io/gorm"
 )
 
 const (
 	CHUNK_SIZE = 100
 )
 
-func UpdateStockInfo(db *gorm.DB, date string) error {
+func UpdateStockInfo(db storage.DB, date string) error {
 	mailAddress := os.Getenv("JQUANTS_MAIL_ADDRESS")
 	password := os.Getenv("JQUANTS_PASSWORD")
 
@@ -37,7 +35,7 @@ func UpdateStockInfo(db *gorm.DB, date string) error {
 	return nil
 }
 
-func updateBrands(client *jquants.Client, db *gorm.DB) error {
+func updateBrands(client *jquants.Client, db storage.DB) error {
 	resp, err := client.ListBrands(jquants.ListBrandRequest{})
 	if err != nil {
 		return err
@@ -58,7 +56,7 @@ func updateBrands(client *jquants.Client, db *gorm.DB) error {
 	if remainder != 0 {
 		loopCount++
 	}
-	err = db.Transaction(func(tx *gorm.DB) error {
+	err = db.Transaction(func(tx storage.DB) error {
 		for i := 0; i < loopCount; i++ {
 			startIndex := i * CHUNK_SIZE
 			endIndex := startIndex + CHUNK_SIZE
@@ -67,7 +65,7 @@ func updateBrands(client *jquants.Client, db *gorm.DB) error {
 			}
 			chunk := records[startIndex:endIndex]
 
-			err = storage.UpsertToBrands(db, chunk)
+			err = storage.UpsertToBrands(tx, chunk)
 			if err != nil {
 				return err
 			}
@@ -82,14 +80,14 @@ func updateBrands(client *jquants.Client, db *gorm.DB) error {
 	return nil
 }
 
-func updatePrices(client *jquants.Client, db *gorm.DB, date string) error {
+func updatePrices(client *jquants.Client, db storage.DB, date string) error {
 	targetDate, err := jquants.NewDateFromString(date)
 	if err != nil {
 		return err
 	}
 
 	req := jquants.NewGetDailyQuoteRequestByDate(targetDate)
-	err = db.Transaction(func(tx *gorm.DB) error {
+	err = db.Transaction(func(tx storage.DB) error {
 		for {
 			resp, err := client.GetDailyQuotes(req)
 			if err != nil {
@@ -119,7 +117,7 @@ func updatePrices(client *jquants.Client, db *gorm.DB, date string) error {
 				}
 				chunk := records[startIndex:endIndex]
 
-				err = storage.UpsertToPrice(db, chunk)
+				err = storage.UpsertToPrice(tx, chunk)
 				if err != nil {
 					return err
 				}

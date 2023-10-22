@@ -2,14 +2,19 @@ package storage
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
-
-	"stock-tool/internal/testutils"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/joho/godotenv"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
 func TestDateScan(t *testing.T) {
@@ -31,8 +36,119 @@ func TestDateValue(t *testing.T) {
 	assert.Equal(t, "2023-01-02", actual)
 }
 
+type HasModelDBTestSuite interface {
+	TableModels() []interface{}
+}
+
+type TestingDBSuite interface {
+	suite.TestingSuite
+
+	setDBSuite(dbSuite TestingDBSuite)
+}
+
 type DBTestSuite struct {
-	testutils.DBTestSuite
+	suite.Suite
+
+	config Config
+	db     DB
+
+	dbSuite TestingDBSuite
+}
+
+func (s *DBTestSuite) SetupSuite() {
+	s.config = s.loadDBConfig()
+	s.setupDB()
+}
+
+func (s *DBTestSuite) SetupTest() {
+	s.createAllTables()
+}
+
+func (s *DBTestSuite) TearDownTest() {
+	s.dropAllTables()
+}
+
+func (s *DBTestSuite) loadDBConfig() Config {
+	curDir, err := os.Getwd()
+	s.Require().Nil(err)
+
+	dotEnvPath := filepath.Join(curDir, "..", ".env")
+
+	err = godotenv.Load(dotEnvPath)
+	s.Require().Nil(err)
+
+	host := os.Getenv("TEST_DB_HOST")
+	s.Require().NotEmpty(host)
+
+	port, err := strconv.Atoi(os.Getenv("TEST_DB_PORT"))
+	s.Require().Nil(err)
+
+	user := os.Getenv("TEST_DB_USER")
+	s.Require().NotEmpty(user)
+
+	password := os.Getenv("TEST_DB_PASSWORD")
+	s.Require().NotEmpty(password)
+
+	return Config{
+		Host:     host,
+		Port:     port,
+		User:     user,
+		Password: password,
+		DBName:   "stock-test",
+		SSLMode:  false,
+		TimeZone: time.FixedZone("Asia/Tokyo", 9*60*60),
+	}
+}
+
+func (s *DBTestSuite) setupDB() {
+	db, err := Connect(s.config)
+	s.Require().Nil(err)
+
+	s.db = db
+
+	s.dropAllTables()
+}
+
+func (s *DBTestSuite) createAllTables() {
+	var tables []interface{}
+	if hasModelDBTestSuite, ok := s.dbSuite.(HasModelDBTestSuite); ok {
+		tables = hasModelDBTestSuite.TableModels()
+	}
+
+	for _, table := range tables {
+		err := s.db.(*postgresDB).gormDB.AutoMigrate(table)
+		s.Require().Nil(err)
+	}
+}
+
+func (s *DBTestSuite) dropAllTables() {
+	tables := s.listTables()
+
+	result := s.db.(*postgresDB).gormDB.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s CASCADE", strings.Join(tables, ", ")))
+	s.Require().Nil(result.Error)
+}
+
+func (s *DBTestSuite) listTables() []string {
+	rows, err := s.db.(*postgresDB).gormDB.Raw("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public'").Rows()
+	s.Require().Nil(err)
+	defer rows.Close()
+
+	var tables []string
+	for rows.Next() {
+		var name string
+		err := rows.Scan(&name)
+		if err != nil {
+			s.Require().Nil(err)
+		}
+
+		tables = append(tables, name)
+	}
+
+	return tables
+}
+
+func (s *DBTestSuite) setDBSuite(dbSuite TestingDBSuite) {
+	s.dbSuite = dbSuite
 }
 
 func (s *DBTestSuite) TableModels() []interface{} {
@@ -58,8 +174,14 @@ func (s *DBTestSuite) AssertPartialEqual(expected any, actual any, diffOpts cmp.
 	)
 }
 
+func Run(t *testing.T, dbTestSuite TestingDBSuite) {
+	dbTestSuite.setDBSuite(dbTestSuite)
+
+	suite.Run(t, dbTestSuite)
+}
+
 func Test_DBTestSuite(t *testing.T) {
-	testutils.Run(t, new(DBTestSuite))
+	Run(t, new(DBTestSuite))
 }
 
 func (s *DBTestSuite) Test_UpsertToBrands() {
@@ -79,12 +201,12 @@ func (s *DBTestSuite) Test_UpsertToBrands() {
 		},
 	}
 
-	err := UpsertToBrands(s.GormDB, brands)
+	err := UpsertToBrands(s.db, brands)
 
 	s.Nil(err)
 
 	var actualBrands []Brand
-	result := s.GormDB.Find(&actualBrands)
+	result := s.db.(*postgresDB).gormDB.Find(&actualBrands)
 	s.Nil(result.Error)
 
 	s.Equal(1, len(actualBrands))
@@ -114,12 +236,12 @@ func (s *DBTestSuite) Test_UpsertToPrice() {
 		},
 	}
 
-	err := UpsertToPrice(s.GormDB, prices)
+	err := UpsertToPrice(s.db, prices)
 
 	s.Nil(err)
 
 	var actualPrices []Price
-	result := s.GormDB.Find(&actualPrices)
+	result := s.db.(*postgresDB).gormDB.Find(&actualPrices)
 	s.Nil(result.Error)
 
 	s.Equal(1, len(actualPrices))
