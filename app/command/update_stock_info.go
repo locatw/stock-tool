@@ -3,15 +3,15 @@ package command
 import (
 	"errors"
 	"os"
+	"stock-tool/database"
 	"stock-tool/jquants"
-	"stock-tool/storage"
 )
 
 const (
 	CHUNK_SIZE = 100
 )
 
-func UpdateStockInfo(db storage.DB, date string) error {
+func UpdateStockInfo(db database.DB, date string) error {
 	mailAddress := os.Getenv("JQUANTS_MAIL_ADDRESS")
 	password := os.Getenv("JQUANTS_PASSWORD")
 
@@ -35,7 +35,7 @@ func UpdateStockInfo(db storage.DB, date string) error {
 	return nil
 }
 
-func updateBrands(client *jquants.Client, db storage.DB) error {
+func updateBrands(client *jquants.Client, db database.DB) error {
 	resp, err := client.ListBrands(jquants.ListBrandRequest{})
 	if err != nil {
 		return err
@@ -56,7 +56,7 @@ func updateBrands(client *jquants.Client, db storage.DB) error {
 	if remainder != 0 {
 		loopCount++
 	}
-	err = db.Transaction(func(tx storage.DB) error {
+	err = db.Transaction(func(tx database.DB) error {
 		for i := 0; i < loopCount; i++ {
 			startIndex := i * CHUNK_SIZE
 			endIndex := startIndex + CHUNK_SIZE
@@ -65,7 +65,7 @@ func updateBrands(client *jquants.Client, db storage.DB) error {
 			}
 			chunk := records[startIndex:endIndex]
 
-			err = storage.UpsertToBrands(tx, chunk)
+			err = database.UpsertToBrands(tx, chunk)
 			if err != nil {
 				return err
 			}
@@ -80,14 +80,14 @@ func updateBrands(client *jquants.Client, db storage.DB) error {
 	return nil
 }
 
-func updatePrices(client *jquants.Client, db storage.DB, date string) error {
+func updatePrices(client *jquants.Client, db database.DB, date string) error {
 	targetDate, err := jquants.NewDateFromString(date)
 	if err != nil {
 		return err
 	}
 
 	req := jquants.NewGetDailyQuoteRequestByDate(targetDate)
-	err = db.Transaction(func(tx storage.DB) error {
+	err = db.Transaction(func(tx database.DB) error {
 		for {
 			resp, err := client.GetDailyQuotes(req)
 			if err != nil {
@@ -117,7 +117,7 @@ func updatePrices(client *jquants.Client, db storage.DB, date string) error {
 				}
 				chunk := records[startIndex:endIndex]
 
-				err = storage.UpsertToPrice(tx, chunk)
+				err = database.UpsertToPrice(tx, chunk)
 				if err != nil {
 					return err
 				}
@@ -139,10 +139,10 @@ func updatePrices(client *jquants.Client, db storage.DB, date string) error {
 	return nil
 }
 
-func convertBrands(fromValues *jquants.ListBrandResponseBody) []storage.Brand {
-	brands := []storage.Brand{}
+func convertBrands(fromValues *jquants.ListBrandResponseBody) []database.Brand {
+	brands := []database.Brand{}
 	for _, from := range fromValues.Brands {
-		brand := storage.Brand{
+		brand := database.Brand{
 			Date:               convertDate(from.Date),
 			Code:               from.Code,
 			CompanyName:        from.CompanyName,
@@ -162,10 +162,10 @@ func convertBrands(fromValues *jquants.ListBrandResponseBody) []storage.Brand {
 	return brands
 }
 
-func convertPrices(fromValues *jquants.GetDailyQuoteResponseBody) []storage.Price {
-	prices := []storage.Price{}
+func convertPrices(fromValues *jquants.GetDailyQuoteResponseBody) []database.Price {
+	prices := []database.Price{}
 	for _, from := range fromValues.DailyQuotes {
-		price := storage.Price{
+		price := database.Price{
 			Date:             convertDate(from.Date),
 			Code:             from.Code,
 			Open:             from.Open,
@@ -188,6 +188,6 @@ func convertPrices(fromValues *jquants.GetDailyQuoteResponseBody) []storage.Pric
 	return prices
 }
 
-func convertDate(jquantsDate jquants.Date) storage.Date {
-	return storage.Date{Year: jquantsDate.Year, Month: jquantsDate.Month, Day: jquantsDate.Day}
+func convertDate(jquantsDate jquants.Date) database.Date {
+	return database.Date{Year: jquantsDate.Year, Month: jquantsDate.Month, Day: jquantsDate.Day}
 }

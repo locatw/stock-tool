@@ -7,14 +7,14 @@ import (
 	"time"
 
 	"stock-tool/command"
-	"stock-tool/storage"
+	"stock-tool/database"
 
 	"github.com/joho/godotenv"
 	"github.com/shopspring/decimal"
 )
 
 var (
-	db storage.DB
+	db database.DB
 )
 
 func init() {
@@ -30,7 +30,7 @@ func init() {
 		os.Exit(1)
 	}
 
-	db, err = storage.Connect(storage.Config{
+	db, err = database.Connect(database.Config{
 		Host:     os.Getenv("DB_HOST"),
 		Port:     port,
 		User:     os.Getenv("DB_USER"),
