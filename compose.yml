@@ -1,6 +1,6 @@
 services:
   app:
-    image: golang:1.18
+    image: golang:1.21
     environment:
       - DB_HOST=db
       - DB_PORT=5432
