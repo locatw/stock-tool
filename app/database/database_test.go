@@ -116,7 +116,7 @@ func (s *DBTestSuite) createAllTables() {
 	}
 
 	for _, table := range tables {
-		err := s.db.(*postgresDB).gormDB.AutoMigrate(table)
+		err := s.db.gorm().AutoMigrate(table)
 		s.Require().Nil(err)
 	}
 }
@@ -124,12 +124,12 @@ func (s *DBTestSuite) createAllTables() {
 func (s *DBTestSuite) dropAllTables() {
 	tables := s.listTables()
 
-	result := s.db.(*postgresDB).gormDB.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s CASCADE", strings.Join(tables, ", ")))
+	result := s.db.gorm().Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s CASCADE", strings.Join(tables, ", ")))
 	s.Require().Nil(result.Error)
 }
 
 func (s *DBTestSuite) listTables() []string {
-	rows, err := s.db.(*postgresDB).gormDB.Raw("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public'").Rows()
+	rows, err := s.db.gorm().Raw("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public'").Rows()
 	s.Require().Nil(err)
 	defer rows.Close()
 
@@ -206,7 +206,7 @@ func (s *DBTestSuite) Test_UpsertToBrands() {
 	s.Nil(err)
 
 	var actualBrands []Brand
-	result := s.db.(*postgresDB).gormDB.Find(&actualBrands)
+	result := s.db.gorm().Find(&actualBrands)
 	s.Nil(result.Error)
 
 	s.Equal(1, len(actualBrands))
@@ -241,7 +241,7 @@ func (s *DBTestSuite) Test_UpsertToPrice() {
 	s.Nil(err)
 
 	var actualPrices []Price
-	result := s.db.(*postgresDB).gormDB.Find(&actualPrices)
+	result := s.db.gorm().Find(&actualPrices)
 	s.Nil(result.Error)
 
 	s.Equal(1, len(actualPrices))

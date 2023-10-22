@@ -105,14 +105,14 @@ type postgresDB struct {
 	gormDB *gorm.DB
 }
 
-func (db *postgresDB) gorm() *gorm.DB {
-	return db.gormDB
-}
-
 func (db *postgresDB) Transaction(fc func(tx DB) error, opts ...*sql.TxOptions) error {
 	return db.gormDB.Transaction(func(tx *gorm.DB) error {
 		return fc(&postgresDB{gormDB: tx})
 	}, opts...)
+}
+
+func (db *postgresDB) gorm() *gorm.DB {
+	return db.gormDB
 }
 
 type Config struct {
