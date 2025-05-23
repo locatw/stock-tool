@@ -8,6 +8,7 @@ import (
 
 	"stock-tool/command"
 	"stock-tool/database"
+	"stock-tool/jquants"
 
 	"github.com/joho/godotenv"
 	"github.com/shopspring/decimal"
@@ -53,21 +54,25 @@ func main() {
 		os.Exit(1)
 	}
 
-	cmd := os.Args[1]
-	switch cmd {
+	cmdName := os.Args[1]
+	switch cmdName {
 	case "update-stock-info":
 		if len(os.Args) < 3 {
 			showUsage()
 			os.Exit(1)
 		}
 
-		err := command.UpdateStockInfo(db, os.Args[2])
+		mailAddress := os.Getenv("JQUANTS_MAIL_ADDRESS")
+		password := os.Getenv("JQUANTS_PASSWORD")
+		client := jquants.NewClient(mailAddress, password)
+
+		err := command.NewUpdateStockInfoCommand(client, db).Execute(os.Args[2])
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 	default:
-		fmt.Printf("Unknown command: %s\n", cmd)
+		fmt.Printf("Unknown command: %s\n", cmdName)
 		fmt.Println("")
 		showUsage()
 		os.Exit(1)

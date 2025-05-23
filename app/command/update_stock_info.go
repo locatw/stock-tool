@@ -2,7 +2,6 @@ package command
 
 import (
 	"errors"
-	"os"
 	"stock-tool/database"
 	"stock-tool/jquants"
 )
@@ -11,23 +10,30 @@ const (
 	CHUNK_SIZE = 100
 )
 
-func UpdateStockInfo(db database.DB, date string) error {
-	mailAddress := os.Getenv("JQUANTS_MAIL_ADDRESS")
-	password := os.Getenv("JQUANTS_PASSWORD")
+type UpdateStockInfoCommand struct {
+	jquantsClient *jquants.Client
+	db            database.DB
+}
 
-	client := jquants.NewClient(mailAddress, password)
+func NewUpdateStockInfoCommand(client *jquants.Client, db database.DB) *UpdateStockInfoCommand {
+	return &UpdateStockInfoCommand{
+		jquantsClient: client,
+		db:            db,
+	}
+}
 
-	err := client.Login()
+func (c *UpdateStockInfoCommand) Execute(date string) error {
+	err := c.jquantsClient.Login()
 	if err != nil {
 		return err
 	}
 
-	err = updateBrands(client, db)
+	err = c.updateBrands()
 	if err != nil {
 		return err
 	}
 
-	err = updatePrices(client, db, date)
+	err = c.updatePrices(date)
 	if err != nil {
 		return err
 	}
@@ -35,8 +41,8 @@ func UpdateStockInfo(db database.DB, date string) error {
 	return nil
 }
 
-func updateBrands(client *jquants.Client, db database.DB) error {
-	resp, err := client.ListBrands(jquants.ListBrandRequest{})
+func (c *UpdateStockInfoCommand) updateBrands() error {
+	resp, err := c.jquantsClient.ListBrands(jquants.ListBrandRequest{})
 	if err != nil {
 		return err
 	}
@@ -56,7 +62,7 @@ func updateBrands(client *jquants.Client, db database.DB) error {
 	if remainder != 0 {
 		loopCount++
 	}
-	err = db.Transaction(func(tx database.DB) error {
+	err = c.db.Transaction(func(tx database.DB) error {
 		for i := 0; i < loopCount; i++ {
 			startIndex := i * CHUNK_SIZE
 			endIndex := startIndex + CHUNK_SIZE
@@ -80,16 +86,16 @@ func updateBrands(client *jquants.Client, db database.DB) error {
 	return nil
 }
 
-func updatePrices(client *jquants.Client, db database.DB, date string) error {
+func (c *UpdateStockInfoCommand) updatePrices(date string) error {
 	targetDate, err := jquants.NewDateFromString(date)
 	if err != nil {
 		return err
 	}
 
 	req := jquants.NewGetDailyQuoteRequestByDate(targetDate)
-	err = db.Transaction(func(tx database.DB) error {
+	err = c.db.Transaction(func(tx database.DB) error {
 		for {
-			resp, err := client.GetDailyQuotes(req)
+			resp, err := c.jquantsClient.GetDailyQuotes(req)
 			if err != nil {
 				return err
 			}
