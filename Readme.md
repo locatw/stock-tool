@@ -2,15 +2,26 @@
 
 ## Initial Set up
 
+Make .env in repository root.
+
     $ cp .env.template .env
     $ vi .env
+
+Make .env in backend.
+
+    $ cp ./backend/.env.template ./backend/.env
+    $ vi ./backend/.env
 
 ## Migration
 
 Show migration status.
 
-    $ docker compose run --rm migration sql-migrate status
+    $ go run ./cmd/cli/ migrate version
 
 Generate new migration file.
 
-    $ docker compose run --rm migration sql-migrate new MIGRATION_NAME
+    $ go run ./cmd/cli/ migrate create MIGRATION_NAME
+
+Apply migrations.
+
+    $ go run ./cmd/cli/ migrate up

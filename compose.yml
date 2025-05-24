@@ -25,31 +25,7 @@ services:
       - POSTGRES_USER=${DB_USER:-postgres}
       - POSTGRES_PASSWORD=${DB_PASSWORD:-1234}
     volumes:
-      - ./docker/db/:/docker-entrypoint-initdb.d
       - db-vol:/var/lib/postgresql/data
-  db-gui:
-    image: sosedoff/pgweb
-    environment:
-      - "PGWEB_DATABASE_URL=postgres://postgres:${DB_PASSWORD}@db:5432/stock?sslmode=disable"
-    ports:
-      - "${DB_GUI_PORT:-8081}:8081"
-    depends_on:
-      - db
-  migration:
-    build:
-      args:
-        UID: ${UID}
-        GID: ${GID}
-      context: ./migration
-      dockerfile: ../docker/migration/Dockerfile
-    environment:
-      - POSTGRES_DB=stock
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-1234}
-    volumes:
-      - ./migration/versions:/app/migration/versions
-      - ./migration/dbconfig.yml:/app/migration/dbconfig.yml
-    depends_on:
-      - db
 volumes:
   app-go-vol:
   db-vol:

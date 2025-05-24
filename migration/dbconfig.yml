@@ -1,4 +1,0 @@
-development:
-  dialect: postgres
-  datasource: host=db dbname=${POSTGRES_DB} user=postgres password=${POSTGRES_PASSWORD} sslmode=disable
-  dir: versions
