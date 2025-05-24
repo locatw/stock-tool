@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"time"
 
 	"stock-tool/command"
 	"stock-tool/database"
@@ -38,7 +37,6 @@ func init() {
 		Password: os.Getenv("DB_PASSWORD"),
 		DBName:   "stock",
 		SSLMode:  false,
-		TimeZone: time.FixedZone("Asia/Tokyo", 9*60*60),
 	})
 	if err != nil {
 		fmt.Println(err)

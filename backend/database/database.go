@@ -16,6 +16,12 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+const (
+	SchemaName = "stock"
+
+	CTXKeyDBConfig = "DBConfig"
+)
+
 type HeadColumns struct {
 	ID uint `gorm:"primarykey"`
 }
@@ -96,6 +102,78 @@ type Price struct {
 	TailColumns
 }
 
+type RawDB struct {
+	db     *sql.DB
+	config Config
+}
+
+func NewRawDB(config Config) *RawDB {
+	return &RawDB{db: nil, config: config}
+}
+
+func (r *RawDB) Connect() error {
+	db, err := sql.Open("postgres", r.DSN())
+	if err != nil {
+		return err
+	}
+
+	r.db = db
+
+	return nil
+}
+
+func (r *RawDB) Init() error {
+	initialized, err := r.checkInitialized()
+	if err != nil {
+		return fmt.Errorf("failed to check if database is initialized: %w", err)
+	} else if initialized {
+		return nil
+	}
+
+	if _, err := r.db.Exec(fmt.Sprintf(`CREATE SCHEMA %s`, SchemaName)); err != nil {
+		return fmt.Errorf("failed to create schema %s: %w", SchemaName, err)
+	}
+
+	return nil
+}
+
+func (r *RawDB) checkInitialized() (bool, error) {
+	query := fmt.Sprintf("SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name = '%s'", SchemaName)
+
+	var count int
+	if err := r.db.QueryRow(query).Scan(&count); err != nil {
+		return false, err
+	}
+
+	return count != 0, nil
+}
+
+func (r *RawDB) Shutdown() error {
+	return r.db.Close()
+}
+
+func (r *RawDB) DSN() string {
+	return fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		r.config.Host,
+		r.config.Port,
+		r.config.User,
+		r.config.Password,
+		r.config.DBName,
+		func(value bool) string {
+			if value {
+				return "enable"
+			} else {
+				return "disable"
+			}
+		}(r.config.SSLMode),
+	)
+}
+
+func (db *RawDB) DB() *sql.DB {
+	return db.db
+}
+
 type DB interface {
 	Transaction(fc func(tx DB) error, opts ...*sql.TxOptions) error
 	gorm() *gorm.DB
@@ -122,28 +200,11 @@ type Config struct {
 	Password string
 	DBName   string
 	SSLMode  bool
-	TimeZone *time.Location
 }
 
 func Connect(config Config) (DB, error) {
-	dsn := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s TimeZone=%s",
-		config.Host,
-		config.Port,
-		config.User,
-		config.Password,
-		config.DBName,
-		func(value bool) string {
-			if value {
-				return "enable"
-			} else {
-				return "disable"
-			}
-		}(config.SSLMode),
-		config.TimeZone.String(),
-	)
-
-	gormDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	rawDB := NewRawDB(config)
+	gormDB, err := gorm.Open(postgres.Open(rawDB.DSN()), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}

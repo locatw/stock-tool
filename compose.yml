@@ -22,6 +22,7 @@ services:
       - 5432:5432
     environment:
       - POSTGRES_DB=stock
+      - POSTGRES_USER=${DB_USER:-postgres}
       - POSTGRES_PASSWORD=${DB_PASSWORD:-1234}
     volumes:
       - ./docker/db/:/docker-entrypoint-initdb.d

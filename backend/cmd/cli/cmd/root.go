@@ -13,5 +13,8 @@ func NewRootCmd() *cobra.Command {
 		},
 	}
 
+	c.AddCommand(newInitDBCmd())
+	c.AddCommand(newMigrateCmd())
+
 	return c
 }

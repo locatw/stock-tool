@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -96,7 +95,6 @@ func (s *DBTestSuite) loadDBConfig() Config {
 		Password: password,
 		DBName:   "stock-test",
 		SSLMode:  false,
-		TimeZone: time.FixedZone("Asia/Tokyo", 9*60*60),
 	}
 }
 
