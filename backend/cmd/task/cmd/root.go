@@ -1,10 +1,11 @@
 package cmd
 
 import (
+	"github.com/samber/do"
 	"github.com/spf13/cobra"
 )
 
-func NewRootCmd() *cobra.Command {
+func NewRootCmd(injector *do.Injector) *cobra.Command {
 	c := &cobra.Command{
 		Use:   "task",
 		Short: "stock-tool task",
@@ -12,6 +13,8 @@ func NewRootCmd() *cobra.Command {
 			c.Help()
 		},
 	}
+
+	c.AddCommand(newFetchDataCmd(injector))
 
 	return c
 }

@@ -6,9 +6,11 @@ import (
 	"os"
 	"stock-tool/cmd/task/cmd"
 	"stock-tool/database"
+	"stock-tool/internal/api/jquants"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
+	"github.com/samber/do"
 )
 
 const (
@@ -16,11 +18,13 @@ const (
 )
 
 type envVars struct {
-	DBHost     string `env:"DB_HOST" envDefault:"localhost"`
-	DBPort     int    `env:"DB_PORT" envDefault:"5432"`
-	DBUser     string `env:"DB_USER"`
-	DBPassword string `env:"DB_PASSWORD"`
-	DBName     string `env:"DB_NAME"`
+	JQuantsMailAddress string `env:"JQUANTS_MAIL_ADDRESS"`
+	JQuantsPassword    string `env:"JQUANTS_PASSWORD"`
+	DBHost             string `env:"DB_HOST" envDefault:"localhost"`
+	DBPort             int    `env:"DB_PORT" envDefault:"5432"`
+	DBUser             string `env:"DB_USER"`
+	DBPassword         string `env:"DB_PASSWORD"`
+	DBName             string `env:"DB_NAME"`
 }
 
 var ev envVars
@@ -57,7 +61,12 @@ func main() {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, database.CTXKeyDBConfig, dbConfig)
 
-	command := cmd.NewRootCmd()
+	injector := do.New()
+	do.Provide(injector, func(i *do.Injector) (*jquants.Client, error) {
+		return jquants.NewClient(ev.JQuantsMailAddress, ev.JQuantsPassword), nil
+	})
+
+	command := cmd.NewRootCmd(injector)
 	command.SetContext(ctx)
 
 	if err := command.Execute(); err != nil {

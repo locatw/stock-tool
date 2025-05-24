@@ -39,6 +39,14 @@ func NewDateFromString(value string) (Date, error) {
 	return date, nil
 }
 
+func NewDateFromTime(value time.Time) Date {
+	return Date{
+		Year:  value.In(timezone_jst).Year(),
+		Month: int(value.In(timezone_jst).Month()),
+		Day:   value.In(timezone_jst).Day(),
+	}
+}
+
 func (d *Date) Format() string {
 	return fmt.Sprintf("%04d-%02d-%02d", d.Year, d.Month, d.Day)
 }

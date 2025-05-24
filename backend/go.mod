@@ -7,9 +7,11 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.18.3
 	github.com/google/go-cmp v0.6.0
 	github.com/joho/godotenv v1.5.1
+	github.com/samber/do v1.6.0
+	github.com/samber/lo v1.50.0
 	github.com/shopspring/decimal v1.4.0
 	github.com/spf13/cobra v1.9.1
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.26.1
 )
