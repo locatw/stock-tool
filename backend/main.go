@@ -7,7 +7,7 @@ import (
 
 	"stock-tool/command"
 	"stock-tool/database"
-	"stock-tool/jquants"
+	"stock-tool/internal/api/jquants"
 
 	"github.com/joho/godotenv"
 	"github.com/shopspring/decimal"

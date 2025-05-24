@@ -3,7 +3,7 @@ package command
 import (
 	"errors"
 	"stock-tool/database"
-	"stock-tool/jquants"
+	"stock-tool/internal/api/jquants"
 )
 
 const (
