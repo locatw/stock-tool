@@ -130,7 +130,7 @@ func (c *extractJQuantsCommand) getOptionDateFlag(flag string) (*time.Time, erro
 
 	date, err := time.Parse("2006-01-02", dateStr)
 	if err != nil {
-		return nil, fmt.Errorf("invalid start date format: %v", err)
+		return nil, fmt.Errorf("invalid date format: %v", err)
 	}
 
 	return lo.ToPtr(date), nil
