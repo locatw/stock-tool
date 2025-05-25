@@ -12,17 +12,17 @@ import (
 	"github.com/samber/lo"
 )
 
-type FetchDataTaskUseCase struct {
+type ExtractTaskUseCase struct {
 	jqClient *jquants.Client
 }
 
-func NewFetchDataTaskUseCase(jqClient *jquants.Client) *FetchDataTaskUseCase {
-	return &FetchDataTaskUseCase{
+func NewExtractTaskUseCase(jqClient *jquants.Client) *ExtractTaskUseCase {
+	return &ExtractTaskUseCase{
 		jqClient: jqClient,
 	}
 }
 
-func (uc *FetchDataTaskUseCase) FetchData(ctx context.Context, req *FetchDataRequest) (*FetchDataResponse, error) {
+func (uc *ExtractTaskUseCase) Extract(ctx context.Context, req *ExtractRequest) (*ExtractResponse, error) {
 	switch req.Source {
 	case "jquants":
 		if err := uc.jqClient.Login(); err != nil {
@@ -72,5 +72,5 @@ func (uc *FetchDataTaskUseCase) FetchData(ctx context.Context, req *FetchDataReq
 		return nil, fmt.Errorf("unsupported source: %s", req.Source)
 	}
 
-	return &FetchDataResponse{}, nil
+	return &ExtractResponse{}, nil
 }

@@ -14,7 +14,7 @@ func NewRootCmd(injector *do.Injector) *cobra.Command {
 		},
 	}
 
-	c.AddCommand(newFetchDataCmd(injector))
+	c.AddCommand(newExtractCmd(injector))
 
 	return c
 }

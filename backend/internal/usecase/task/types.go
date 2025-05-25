@@ -2,7 +2,7 @@ package usecase
 
 import "time"
 
-type FetchDataRequest struct {
+type ExtractRequest struct {
 	Source    string
 	DataType  string
 	Code      *string
@@ -11,4 +11,4 @@ type FetchDataRequest struct {
 	EndDate   *time.Time
 }
 
-type FetchDataResponse struct{}
+type ExtractResponse struct{}

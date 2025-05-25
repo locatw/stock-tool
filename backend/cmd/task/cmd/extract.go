@@ -12,50 +12,50 @@ import (
 	usecase "stock-tool/internal/usecase/task"
 )
 
-func newFetchDataCmd(injector *do.Injector) *cobra.Command {
+func newExtractCmd(injector *do.Injector) *cobra.Command {
 	c := &cobra.Command{
-		Use:   "fetch-data",
-		Short: "fetching data from a source",
+		Use:   "extract",
+		Short: "extract data from a source",
 		Run: func(c *cobra.Command, args []string) {
 			c.Help()
 		},
 	}
 
-	c.AddCommand(newFetchDataJQuantsCmd(injector))
+	c.AddCommand(newExtractJQuantsCmd(injector))
 
 	return c
 }
 
-func newFetchDataJQuantsCmd(injector *do.Injector) *cobra.Command {
+func newExtractJQuantsCmd(injector *do.Injector) *cobra.Command {
 	c := &cobra.Command{
 		Use:   "jquants",
-		Short: "fetching data from J-Quants source",
+		Short: "extract data from J-Quants source",
 		RunE: func(c *cobra.Command, args []string) error {
-			return newFetchDataCommand(c, injector).Execute()
+			return newExtractCommand(c, injector).Execute()
 		},
 	}
 
-	c.Flags().String("type", "", "type of data to fetch from the source")
-	c.Flags().String("dest-url", "", "destination url to save the fetched data (e.g. file://path/to/file.json)")
-	c.Flags().String("code", "", "code of the listed issue to fetch (optional, used for specific types)")
-	c.Flags().String("start-date", "", "start date for fetching data (optional)")
-	c.Flags().String("end-date", "", "end date for fetching data (optional)")
+	c.Flags().String("type", "", "type of data to extract from the source")
+	c.Flags().String("dest-url", "", "destination url to save the extracted data (e.g. file://path/to/file.json)")
+	c.Flags().String("code", "", "code of the listed issue to extract (optional, used for specific types)")
+	c.Flags().String("start-date", "", "start date for extracting data (optional)")
+	c.Flags().String("end-date", "", "end date for extracting data (optional)")
 	c.MarkFlagRequired("type")
 	c.MarkFlagRequired("dest-url")
 
 	return c
 }
 
-type jQuantsFetchDataCommand struct {
+type extractJQuantsCommand struct {
 	cmd      *cobra.Command
 	injector *do.Injector
 }
 
-func newFetchDataCommand(cmd *cobra.Command, injector *do.Injector) *jQuantsFetchDataCommand {
-	return &jQuantsFetchDataCommand{cmd: cmd, injector: injector}
+func newExtractCommand(cmd *cobra.Command, injector *do.Injector) *extractJQuantsCommand {
+	return &extractJQuantsCommand{cmd: cmd, injector: injector}
 }
 
-func (c *jQuantsFetchDataCommand) Execute() error {
+func (c *extractJQuantsCommand) Execute() error {
 	dataType, err := c.cmd.Flags().GetString("type")
 	if err != nil {
 		return err
@@ -83,7 +83,7 @@ func (c *jQuantsFetchDataCommand) Execute() error {
 
 	client := do.MustInvoke[*jquants.Client](c.injector)
 
-	req := &usecase.FetchDataRequest{
+	req := &usecase.ExtractRequest{
 		Source:    "jquants",
 		DataType:  dataType,
 		Code:      code,
@@ -92,8 +92,8 @@ func (c *jQuantsFetchDataCommand) Execute() error {
 		EndDate:   endDate,
 	}
 
-	uc := usecase.NewFetchDataTaskUseCase(client)
-	_, err = uc.FetchData(c.cmd.Context(), req)
+	uc := usecase.NewExtractTaskUseCase(client)
+	_, err = uc.Extract(c.cmd.Context(), req)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (c *jQuantsFetchDataCommand) Execute() error {
 	return nil
 }
 
-func (c *jQuantsFetchDataCommand) getOptionStringFlag(flag string) (*string, error) {
+func (c *extractJQuantsCommand) getOptionStringFlag(flag string) (*string, error) {
 	if !c.cmd.Flags().Changed(flag) {
 		return nil, nil
 	}
@@ -116,7 +116,7 @@ func (c *jQuantsFetchDataCommand) getOptionStringFlag(flag string) (*string, err
 	return lo.ToPtr(s), nil
 }
 
-func (c *jQuantsFetchDataCommand) getOptionDateFlag(flag string) (*time.Time, error) {
+func (c *extractJQuantsCommand) getOptionDateFlag(flag string) (*time.Time, error) {
 	if !c.cmd.Flags().Changed(flag) {
 		return nil, nil
 	}
