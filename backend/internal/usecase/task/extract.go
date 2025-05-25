@@ -22,7 +22,7 @@ func NewExtractTaskUseCase(jqClient *jquants.Client) *ExtractTaskUseCase {
 	}
 }
 
-func (uc *ExtractTaskUseCase) Extract(ctx context.Context, req *ExtractRequest) (*ExtractResponse, error) {
+func (uc *ExtractTaskUseCase) Extract(ctx context.Context, req *ExtractTaskRequest) (*ExtractTaskResponse, error) {
 	switch req.Source {
 	case "jquants":
 		if err := uc.jqClient.Login(); err != nil {
@@ -72,5 +72,5 @@ func (uc *ExtractTaskUseCase) Extract(ctx context.Context, req *ExtractRequest) 
 		return nil, fmt.Errorf("unsupported source: %s", req.Source)
 	}
 
-	return &ExtractResponse{}, nil
+	return &ExtractTaskResponse{}, nil
 }

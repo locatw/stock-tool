@@ -83,7 +83,7 @@ func (c *extractJQuantsCommand) Execute() error {
 
 	client := do.MustInvoke[*jquants.Client](c.injector)
 
-	req := &usecase.ExtractRequest{
+	req := &usecase.ExtractTaskRequest{
 		Source:    "jquants",
 		DataType:  dataType,
 		Code:      code,
