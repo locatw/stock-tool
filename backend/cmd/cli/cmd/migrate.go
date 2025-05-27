@@ -200,11 +200,6 @@ func (m *migrateCommand) Goto(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if !m.askConfirmation(cmd, "Are you sure you want to apply all down migrations?") {
-		fmt.Fprintln(cmd.OutOrStdout(), "Aborted.")
-		return nil
-	}
-
 	return mig.Migrate(uint(version))
 }
 

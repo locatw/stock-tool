@@ -179,6 +179,16 @@ type DB interface {
 	gorm() *gorm.DB
 }
 
+func CreateGormDB(db *sql.DB) (*gorm.DB, error) {
+	return gorm.Open(
+		postgres.New(postgres.Config{Conn: db}),
+		&gorm.Config{
+			NamingStrategy: schema.NamingStrategy{
+				TablePrefix: SchemaName + ".", // Use schema name as table prefix
+			},
+		})
+}
+
 type postgresDB struct {
 	gormDB *gorm.DB
 }
@@ -204,7 +214,12 @@ type Config struct {
 
 func Connect(config Config) (DB, error) {
 	rawDB := NewRawDB(config)
-	gormDB, err := gorm.Open(postgres.Open(rawDB.DSN()), &gorm.Config{})
+	gormDB, err := gorm.Open(postgres.Open(rawDB.DSN()), &gorm.Config{
+		// TODO: same in CreateGormDB()
+		NamingStrategy: schema.NamingStrategy{
+			TablePrefix: SchemaName + ".", // Use schema name as table prefix
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
