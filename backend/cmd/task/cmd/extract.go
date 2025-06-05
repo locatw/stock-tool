@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"stock-tool/internal/api/jquants"
+	"stock-tool/internal/infra/repository"
 	usecase "stock-tool/internal/usecase/task"
 )
 
@@ -82,6 +83,7 @@ func (c *extractJQuantsCommand) Execute() error {
 	}
 
 	client := do.MustInvoke[*jquants.Client](c.injector)
+	extractTaskRepo := do.MustInvoke[*repository.ExtractTaskRepository](c.injector)
 
 	req := &usecase.ExtractTaskRequest{
 		Source:    "jquants",
@@ -92,7 +94,7 @@ func (c *extractJQuantsCommand) Execute() error {
 		EndDate:   endDate,
 	}
 
-	uc := usecase.NewExtractTaskUseCase(client)
+	uc := usecase.NewExtractTaskUseCase(client, extractTaskRepo)
 	_, err = uc.Extract(c.cmd.Context(), req)
 	if err != nil {
 		return err

@@ -13,20 +13,17 @@ import (
 )
 
 type ExtractTask struct {
-	ID         int
-	Source     string
-	DataType   string
-	Status     string
-	ErrorInfo  string
-	StartedAt  *time.Time
-	FinishedAt *time.Time
-	CreatedAt  time.Time `gorm:"autoCreateTime:false"`
-	UpdatedAt  time.Time `gorm:"autoUpdateTime:false"`
-	S3Files    []*ExtractedDataS3
+	ID                    int `gorm:"primaryKey"`
+	Source                string
+	DataType              string
+	Timing                string
+	CreatedAt             time.Time               `gorm:"autoCreateTime:false"`
+	UpdatedAt             time.Time               `gorm:"autoUpdateTime:false"`
+	ExtractTaskExecutions []*ExtractTaskExecution `gorm:"foreignKey:ExtractTaskID"`
 }
 
 func (t *ExtractTask) ToEntity() *extract.ExtractTask {
-	s3Files := lo.Map(t.S3Files, func(f *ExtractedDataS3, _ int) *extract.ExtractedDataS3 {
+	execs := lo.Map(t.ExtractTaskExecutions, func(f *ExtractTaskExecution, _ int) *extract.ExtractTaskExecution {
 		return f.ToEntity()
 	})
 
@@ -34,38 +31,86 @@ func (t *ExtractTask) ToEntity() *extract.ExtractTask {
 		t.ID,
 		t.Source,
 		t.DataType,
+		t.Timing,
+		t.CreatedAt,
+		t.UpdatedAt,
+		execs,
+	)
+}
+
+func toExtractTask(e *extract.ExtractTask) *ExtractTask {
+	return &ExtractTask{
+		ID:        e.ID(),
+		Source:    e.Source(),
+		DataType:  e.DataType(),
+		Timing:    e.Timing(),
+		CreatedAt: e.CreatedAt(),
+		UpdatedAt: e.UpdatedAt(),
+		ExtractTaskExecutions: lo.Map(
+			e.Executions(),
+			func(exec *extract.ExtractTaskExecution, _ int) *ExtractTaskExecution {
+				return toExtractTaskExecution(exec)
+			},
+		),
+	}
+}
+
+type ExtractTaskExecution struct {
+	ID               int `gorm:"primaryKey"`
+	ExtractTaskID    int
+	TargetDateTime   time.Time
+	Status           string
+	ErrorInfo        *string
+	StartedAt        *time.Time
+	FinishedAt       *time.Time
+	CreatedAt        time.Time          `gorm:"autoCreateTime:false"`
+	UpdatedAt        time.Time          `gorm:"autoUpdateTime:false"`
+	ExtractedDataS3s []*ExtractedDataS3 `gorm:"foreignKey:ExtractTaskExecutionID"`
+}
+
+func (t *ExtractTaskExecution) ToEntity() *extract.ExtractTaskExecution {
+	s3s := lo.Map(t.ExtractedDataS3s, func(data *ExtractedDataS3, _ int) *extract.ExtractedDataS3 {
+		return data.ToEntity()
+	})
+
+	return extract.NewExtractTaskExecutionDirectly(
+		t.ID,
+		t.TargetDateTime,
 		t.Status,
 		t.ErrorInfo,
 		t.StartedAt,
 		t.FinishedAt,
 		t.CreatedAt,
 		t.UpdatedAt,
-		s3Files,
+		s3s,
 	)
 }
 
-func toExtractTask(e *extract.ExtractTask) *ExtractTask {
-	return &ExtractTask{
-		ID:         e.ID(),
-		Source:     e.Source(),
-		DataType:   e.DataType(),
-		Status:     e.Status(),
-		ErrorInfo:  e.ErrorInfo(),
-		StartedAt:  e.StartedAt(),
-		FinishedAt: e.FinishedAt(),
-		CreatedAt:  e.CreatedAt(),
-		UpdatedAt:  e.UpdatedAt(),
+func toExtractTaskExecution(e *extract.ExtractTaskExecution) *ExtractTaskExecution {
+	return &ExtractTaskExecution{
+		ID:             e.ID(),
+		TargetDateTime: e.TargetDateTime(),
+		Status:         e.Status(),
+		ErrorInfo:      e.ErrorInfo(),
+		StartedAt:      e.StartedAt(),
+		FinishedAt:     e.FinishedAt(),
+		CreatedAt:      e.CreatedAt(),
+		UpdatedAt:      e.UpdatedAt(),
+		ExtractedDataS3s: lo.Map(
+			e.S3Files(),
+			func(s3 *extract.ExtractedDataS3, _ int) *ExtractedDataS3 {
+				return toExtractedDataS3(s3)
+			},
+		),
 	}
 }
 
 type ExtractedDataS3 struct {
-	ID             int
-	ExtractTaskID  int
-	TargetDateTime time.Time
-	Bucket         string
-	Key            string
-	CreatedAt      time.Time `gorm:"autoCreateTime:false"`
-	UpdatedAt      time.Time `gorm:"autoUpdateTime:false"`
+	ID                     int `gorm:"primaryKey"`
+	ExtractTaskExecutionID int
+	Key                    string
+	CreatedAt              time.Time `gorm:"autoCreateTime:false"`
+	UpdatedAt              time.Time `gorm:"autoUpdateTime:false"`
 }
 
 func (s *ExtractedDataS3) TableName() string {
@@ -75,9 +120,6 @@ func (s *ExtractedDataS3) TableName() string {
 func (s *ExtractedDataS3) ToEntity() *extract.ExtractedDataS3 {
 	return extract.NewExtractedDataS3Directly(
 		s.ID,
-		s.ExtractTaskID,
-		s.TargetDateTime,
-		s.Bucket,
 		s.Key,
 		s.CreatedAt,
 		s.UpdatedAt,
@@ -86,13 +128,10 @@ func (s *ExtractedDataS3) ToEntity() *extract.ExtractedDataS3 {
 
 func toExtractedDataS3(e *extract.ExtractedDataS3) *ExtractedDataS3 {
 	return &ExtractedDataS3{
-		ID:             e.ID(),
-		ExtractTaskID:  e.ExtractTaskID(),
-		TargetDateTime: e.TargetDateTime(),
-		Bucket:         e.Bucket(),
-		Key:            e.Key(),
-		CreatedAt:      e.CreatedAt(),
-		UpdatedAt:      e.UpdatedAt(),
+		ID:        e.ID(),
+		Key:       e.Key(),
+		CreatedAt: e.CreatedAt(),
+		UpdatedAt: e.UpdatedAt(),
 	}
 }
 
@@ -106,17 +145,11 @@ func NewExtractTaskRepository(db *gorm.DB) *ExtractTaskRepository {
 
 func (r *ExtractTaskRepository) Create(ctx context.Context, task *extract.ExtractTask) error {
 	dbTask := toExtractTask(task)
-	if err := r.db.WithContext(ctx).Create(dbTask).Error; err != nil {
-		return err
-	}
+	return r.db.WithContext(ctx).Create(dbTask).Error
+}
 
-	for _, s3File := range task.S3Files() {
-		dbS3File := toExtractedDataS3(s3File)
-		dbS3File.ExtractTaskID = dbTask.ID
-		if err := r.db.WithContext(ctx).Create(dbS3File).Error; err != nil {
-			return err
-		}
-	}
-
-	return nil
+func (r *ExtractTaskRepository) Transaction(ctx context.Context, f func(tx *ExtractTaskRepository) error) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return f(&ExtractTaskRepository{db: tx})
+	})
 }

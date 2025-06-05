@@ -7,18 +7,24 @@ import (
 	"fmt"
 	"os"
 	"stock-tool/internal/api/jquants"
+	"stock-tool/internal/infra/repository"
 	"strings"
 
 	"github.com/samber/lo"
 )
 
 type ExtractTaskUseCase struct {
-	jqClient *jquants.Client
+	jqClient        *jquants.Client
+	extractTaskRepo *repository.ExtractTaskRepository
 }
 
-func NewExtractTaskUseCase(jqClient *jquants.Client) *ExtractTaskUseCase {
+func NewExtractTaskUseCase(
+	jqClient *jquants.Client,
+	extractTaskRepo *repository.ExtractTaskRepository,
+) *ExtractTaskUseCase {
 	return &ExtractTaskUseCase{
-		jqClient: jqClient,
+		jqClient:        jqClient,
+		extractTaskRepo: extractTaskRepo,
 	}
 }
 

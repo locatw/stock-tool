@@ -7,6 +7,7 @@ import (
 	"stock-tool/cmd/task/cmd"
 	"stock-tool/database"
 	"stock-tool/internal/api/jquants"
+	"stock-tool/internal/infra/repository"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
@@ -57,6 +58,11 @@ func main() {
 		DBName:   ev.DBName,
 		SSLMode:  false,
 	}
+	db := database.NewRawDB(dbConfig)
+	if err := db.Connect(); err != nil {
+		fmt.Printf("failed to connect to database: %v\n", err)
+		os.Exit(1)
+	}
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, database.CTXKeyDBConfig, dbConfig)
@@ -64,6 +70,17 @@ func main() {
 	injector := do.New()
 	do.Provide(injector, func(i *do.Injector) (*jquants.Client, error) {
 		return jquants.NewClient(ev.JQuantsMailAddress, ev.JQuantsPassword), nil
+	})
+	do.Provide(injector, func(i *do.Injector) (*database.RawDB, error) {
+		return db, nil
+	})
+	do.Provide(injector, func(i *do.Injector) (*repository.ExtractTaskRepository, error) {
+		rawDB := do.MustInvoke[*database.RawDB](i)
+		db, err := database.CreateGormDB(rawDB.DB())
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Gorm DB: %w", err)
+		}
+		return repository.NewExtractTaskRepository(db), nil
 	})
 
 	command := cmd.NewRootCmd(injector)

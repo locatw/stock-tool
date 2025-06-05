@@ -19,6 +19,16 @@ var cmpOpts = cmp.Options{
 		// PostgreSQL only supports microsecond precision, so truncate to microseconds before comparison
 		return x.Truncate(time.Microsecond).Equal(y.Truncate(time.Microsecond))
 	}),
+	cmp.FilterPath(func(p cmp.Path) bool {
+		if len(p) == 0 {
+			return false
+		}
+		last := p[len(p)-1]
+		if sf, ok := last.(cmp.StructField); ok {
+			return sf.Name() == "CreatedAt" || sf.Name() == "UpdatedAt"
+		}
+		return false
+	}, cmp.Ignore()),
 }
 
 type ExtractTaskRepositoryTestSuite struct {
@@ -50,35 +60,42 @@ func (s *ExtractTaskRepositoryTestSuite) TestCreate() {
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	targetDateTime := now.Add(-24 * time.Hour).Truncate(time.Microsecond)
 
-	task := extract.NewExtractTask("j-quants", "daily-quotes", "pending")
-	s3File := extract.NewExtractedDataS3(targetDateTime, "my-bucket", "path/to/key.csv")
-	task.AddS3File(s3File)
+	s3File := extract.NewExtractedDataS3("path/to/key.csv")
+	exec := extract.NewExtractTaskExecution(targetDateTime, "created")
+	exec.AddS3File(s3File)
+	task := extract.NewExtractTask("j-quants", "daily-quotes", "daily")
+	task.AddExecution(exec)
 
 	err := s.repo.Create(ctx, task)
 
 	s.NoError(err)
 
 	var dbTasks []*ExtractTask
-	err = s.db.Preload("S3Files").Find(&dbTasks).Error
+	err = s.db.Preload("ExtractTaskExecutions.ExtractedDataS3s").Find(&dbTasks).Error
 	s.NoError(err)
 
 	expectedTasks := []*ExtractTask{
 		{
-			ID:        1,
-			Source:    "j-quants",
-			DataType:  "daily-quotes",
-			Status:    "pending",
-			CreatedAt: now,
-			UpdatedAt: now,
-			S3Files: []*ExtractedDataS3{
+			ID:       1,
+			Source:   "j-quants",
+			DataType: "daily-quotes",
+			Timing:   "daily",
+			ExtractTaskExecutions: []*ExtractTaskExecution{
 				{
 					ID:             1,
 					ExtractTaskID:  1,
 					TargetDateTime: targetDateTime,
-					Bucket:         "my-bucket",
-					Key:            "path/to/key.csv",
-					CreatedAt:      now,
-					UpdatedAt:      now,
+					Status:         "created",
+					ErrorInfo:      nil,
+					StartedAt:      nil,
+					FinishedAt:     nil,
+					ExtractedDataS3s: []*ExtractedDataS3{
+						{
+							ID:                     1,
+							ExtractTaskExecutionID: 1,
+							Key:                    "path/to/key.csv",
+						},
+					},
 				},
 			},
 		},
