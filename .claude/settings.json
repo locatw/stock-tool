@@ -1,15 +1,15 @@
 {
   "permissions": {
     "deny": [
-      "Read .env",
-      "Edit .env",
-      "Write .env",
-      "Read .vscode",
-      "Edit .vscode",
-      "Write .vscode",
-      "Read **/*.env*",
-      "Edit **/*.env*",
-      "Write **/*.env*"
+      "Read(.env)",
+      "Edit(.env)",
+      "Write(.env)",
+      "Read(.vscode)",
+      "Edit(.vscode)",
+      "Write(.vscode)",
+      "Read(**/*.env*)",
+      "Edit(**/*.env*)",
+      "Write(**/*.env*)"
     ]
   }
 }
