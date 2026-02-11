@@ -28,14 +28,14 @@ Content that changes with routine development (adding a package, endpoint, migra
 
 - Counts: "5 tables", "3 API endpoints", "7 packages"
 - Exhaustive lists of contents: Listing every package, migration file, or domain entity
-- Specific version numbers: Pin versions only in actual config files (`go.mod`, `compose.yml`, etc.), not in prose
+- Specific version numbers: Pin versions only in actual config files (`go.mod`, `compose.yaml`, etc.), not in prose
 
 ### Do Include
 
 - Directory paths: Where to find things (`backend/migrations/`, `backend/internal/domain/`)
 - Structural conventions: How packages and layers are organized and why
 - Commands and workflows: How to run, build, test, migrate
-- Configuration file references: Which config files control what behavior (e.g., "`compose.yml` for local database setup")
+- Configuration file references: Which config files control what behavior (e.g., "`compose.yaml` for local database setup")
 
 ### Rationale
 

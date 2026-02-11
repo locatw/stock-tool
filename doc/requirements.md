@@ -3,7 +3,7 @@
 ## Runtime
 
 - Go (see version in `go.mod`)
-- PostgreSQL (see version in `compose.yml`)
+- PostgreSQL (see version in `compose.yaml`)
 - Docker (required for running repository tests and local database)
 
 ## Environment Setup

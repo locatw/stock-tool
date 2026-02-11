@@ -57,7 +57,7 @@ The `stock-tool` repository contains only:
 - Application source code (Go, Python)
 - Dockerfiles for building container images
 - CI pipeline definitions
-- Development tooling (`compose.yml`, linters, test configuration)
+- Development tooling (`compose.yaml`, linters, test configuration)
 
 Kubernetes manifests, Kustomize overlays, and ArgoCD Application definitions reside exclusively in the infrastructure repository.
 
@@ -88,7 +88,7 @@ ArgoCD manages deployments using a combination of App-of-Apps and ApplicationSet
 
 ### Phase 1: Docker Compose
 
-Docker Compose provides infrastructure services locally while application code runs natively on the host. This extends the existing `compose.yml` configuration.
+Docker Compose provides infrastructure services locally while application code runs natively on the host. This extends the existing `compose.yaml` configuration.
 
 **Architecture:**
 
@@ -110,7 +110,7 @@ Docker Compose provides infrastructure services locally while application code r
 
 **Principles:**
 
-- **Infrastructure in containers, application on host** — `compose.yml` runs PostgreSQL, SeaweedFS, and other infrastructure services; Go and Python execute natively for fast iteration and debugger access
+- **Infrastructure in containers, application on host** — `compose.yaml` runs PostgreSQL, SeaweedFS, and other infrastructure services; Go and Python execute natively for fast iteration and debugger access
 - **Compose profiles** — group services by function so developers start only what they need (e.g., `docker compose --profile lakehouse up`)
 - **Consistent naming** — service names and environment variable names align with the Kubernetes deployment to minimize configuration differences when transitioning to Phase 2
 - **Environment variables** — managed via `.env` file, following the existing pattern in the repository
@@ -167,7 +167,7 @@ kind load docker-image stock-tool:latest --name stock-tool
 
 ```text
 Phase 1: Docker Compose
-  - Extend compose.yml with profiles for lakehouse services (SeaweedFS, etc.)
+  - Extend compose.yaml with profiles for lakehouse services (SeaweedFS, etc.)
   - Run Go/Python natively on host against containerized infrastructure
   - Align service names and env vars with future k8s resource names
       │
