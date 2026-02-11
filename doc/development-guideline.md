@@ -20,6 +20,15 @@ cd backend && go run ./cmd/cli/ migrate create MIGRATION_NAME
 cd backend && go run ./cmd/task/ extract jquants --type brand --code 86970 --dest-url file://./output
 ```
 
+## Linting
+
+```bash
+make lint       # Run golangci-lint
+make lint-fix   # Run golangci-lint with auto-fix
+```
+
+Linter configuration is in `backend/.golangci.yml`. golangci-lint is managed as a `go tool` dependency — no separate installation is needed.
+
 ## Testing
 
 Repository tests use `ory/dockertest` to spin up a Postgres container per test suite. The `testutil.DBTest` base suite (in `backend/internal/util/testutil/`) handles container lifecycle and migration application. Tests require a running Docker daemon.

@@ -1,0 +1,41 @@
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - staticcheck
+    - govet
+    - ineffassign
+    - unused
+    - revive
+    - errorlint
+    - unconvert
+    - misspell
+    - lll
+    - bodyclose
+  settings:
+    lll:
+      line-length: 120
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+  exclusions:
+    generated: lax
+    paths:
+      - migrations
+    rules:
+      - path: _test\.go
+        linters:
+          - lll
+          - errcheck
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - stock-tool

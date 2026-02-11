@@ -21,4 +21,6 @@ All Go commands run from `backend/`:
 ```bash
 cd backend && go test ./...                    # Run all tests (requires Docker daemon)
 cd backend && go run ./cmd/cli/ migrate up     # Apply migrations
+make lint                                      # Run golangci-lint
+make lint-fix                                  # Run golangci-lint with auto-fix
 ```
