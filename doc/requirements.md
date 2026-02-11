@@ -14,7 +14,7 @@ Start local infrastructure:
 docker compose up db seaweedfs
 ```
 
-Four `.env` files are needed (copy from `.env.template` in each location):
+`.env` files are needed (copy from `.env.template` in each location):
 
 | File | Purpose |
 |---|---|

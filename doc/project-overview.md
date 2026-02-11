@@ -7,7 +7,7 @@ Currently, the platform integrates with the J-Quants API to extract Japanese sto
 
 ## Entry Points
 
-Three applications built with Cobra:
+Applications built with Cobra:
 
 - `backend/cmd/cli/` — Database initialization and migration management
 - `backend/cmd/task/` — Data extraction worker (`extract jquants` subcommand)
