@@ -230,3 +230,77 @@ func toDBModel(e *domain.Entity) *DBModel {
       return r.db.Create(task).Error
   }
   ```
+
+## 10. Testing
+
+### Test Suite
+
+Use `testify/suite` for struct unit tests:
+
+```go
+type FooTestSuite struct {
+    suite.Suite
+}
+
+func TestFoo(t *testing.T) {
+    suite.Run(t, new(FooTestSuite))
+}
+
+func (s *FooTestSuite) TestBar() {
+    s.Equal(expected, actual)
+}
+```
+
+### Parameterized Tests
+
+When testing a single function or method with multiple cases, use a single test method with table-driven subtests:
+
+```go
+func (s *FooTestSuite) TestBar() {
+    type TestCase struct {
+        name     string
+        input    int
+        expected int
+    }
+    tests := []TestCase{
+        {"positive", 1, 2},
+        {"zero", 0, 1},
+        {"negative", -1, 0},
+    }
+    for _, tt := range tests {
+        s.Run(tt.name, func() {
+            s.Equal(tt.expected, Bar(tt.input))
+        })
+    }
+}
+```
+
+Separate test methods are acceptable when the setup or assertions differ significantly between cases (e.g., different mock configurations in usecase tests).
+
+### Usecase Tests
+
+Usecase tests should be integration tests that use real infrastructure (DB, S3) via `dockertest`, and only mock external third-party services (e.g., J-Quants API):
+
+| Dependency | Approach | Reason |
+|---|---|---|
+| Database | Real (PostgreSQL via dockertest) | Catches query bugs, schema mismatches |
+| Object storage | Real (SeaweedFS via dockertest) | Catches upload/key issues |
+| External APIs | Mock | Cannot call in tests, rate limits, costs |
+
+This catches integration bugs that pure mock tests miss (e.g., wrong column names, type conversion errors, S3 key format issues) and makes tests resilient to internal refactoring.
+
+## 11. Timezone Handling
+
+Perform timezone conversions only at the boundary where they are required (e.g., S3 key generation, database persistence), not in upper layers such as usecases:
+
+```go
+// Good — usecase passes time.Now() as-is; GenerateS3Key converts to UTC internally
+now := time.Now()
+s3Key := extract.GenerateS3Key(source, dataType, now, ext)
+
+// Bad — usecase converts to UTC even though GenerateS3Key handles it
+now := time.Now().UTC()
+s3Key := extract.GenerateS3Key(source, dataType, now, ext)
+```
+
+Each component that requires a specific timezone is responsible for converting it internally. This keeps upper layers free from infrastructure concerns and avoids redundant conversions.
