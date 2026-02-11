@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"sync"
 	"time"
 
@@ -39,7 +40,7 @@ type Date struct {
 }
 
 // @see sql.Scanner
-func (d *Date) Scan(value interface{}) error {
+func (d *Date) Scan(value any) error {
 	str, ok := value.(string)
 	if !ok {
 		return errors.New(fmt.Sprint("Failed to unmarshal string date value: ", value))
@@ -237,13 +238,7 @@ func UpsertToBrands(db DB, records []Brand) error {
 	updateColumns := []string{}
 	ignoreColumns := []string{"id", "created_at"}
 	for _, field := range schema.Fields {
-		ignore := false
-		for _, ignoreColumn := range ignoreColumns {
-			if field.DBName == ignoreColumn {
-				ignore = true
-				break
-			}
-		}
+		ignore := slices.Contains(ignoreColumns, field.DBName)
 		if ignore {
 			continue
 		}
@@ -269,13 +264,7 @@ func UpsertToPrice(db DB, records []Price) error {
 	updateColumns := []string{}
 	ignoreColumns := []string{"id", "created_at"}
 	for _, field := range schema.Fields {
-		ignore := false
-		for _, ignoreColumn := range ignoreColumns {
-			if field.DBName == ignoreColumn {
-				ignore = true
-				break
-			}
-		}
+		ignore := slices.Contains(ignoreColumns, field.DBName)
 		if ignore {
 			continue
 		}

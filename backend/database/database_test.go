@@ -36,7 +36,7 @@ func TestDateValue(t *testing.T) {
 }
 
 type HasModelDBTestSuite interface {
-	TableModels() []interface{}
+	TableModels() []any
 }
 
 type TestingDBSuite interface {
@@ -108,7 +108,7 @@ func (s *DBTestSuite) setupDB() {
 }
 
 func (s *DBTestSuite) createAllTables() {
-	var tables []interface{}
+	var tables []any
 	if hasModelDBTestSuite, ok := s.dbSuite.(HasModelDBTestSuite); ok {
 		tables = hasModelDBTestSuite.TableModels()
 	}
@@ -149,8 +149,8 @@ func (s *DBTestSuite) setDBSuite(dbSuite TestingDBSuite) {
 	s.dbSuite = dbSuite
 }
 
-func (s *DBTestSuite) TableModels() []interface{} {
-	return []interface{}{
+func (s *DBTestSuite) TableModels() []any {
+	return []any{
 		&Brand{},
 		&Price{},
 	}

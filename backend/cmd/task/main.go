@@ -8,9 +8,11 @@ import (
 	"stock-tool/database"
 	"stock-tool/internal/api/jquants"
 	"stock-tool/internal/infra/repository"
+	"stock-tool/internal/infra/storage"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 	"github.com/samber/do"
 )
 
@@ -26,6 +28,12 @@ type envVars struct {
 	DBUser             string `env:"DB_USER"`
 	DBPassword         string `env:"DB_PASSWORD"`
 	DBName             string `env:"DB_NAME"`
+	S3Endpoint         string `env:"S3_ENDPOINT" envDefault:"http://localhost:8333"`
+	S3Bucket           string `env:"S3_BUCKET"`
+	S3AccessKey        string `env:"S3_ACCESS_KEY"`
+	S3SecretKey        string `env:"S3_SECRET_KEY"`
+	S3Region           string `env:"S3_REGION" envDefault:"ap-northeast-1"`
+	S3ForcePathStyle   bool   `env:"S3_FORCE_PATH_STYLE" envDefault:"true"`
 }
 
 var ev envVars
@@ -71,6 +79,10 @@ func main() {
 	do.Provide(injector, func(i *do.Injector) (*jquants.Client, error) {
 		return jquants.NewClient(ev.JQuantsMailAddress, ev.JQuantsPassword), nil
 	})
+	do.Provide(injector, func(i *do.Injector) (*jquants.BrandFetcher, error) {
+		client := do.MustInvoke[*jquants.Client](i)
+		return jquants.NewBrandFetcher(client), nil
+	})
 	do.Provide(injector, func(i *do.Injector) (*database.RawDB, error) {
 		return db, nil
 	})
@@ -81,6 +93,16 @@ func main() {
 			return nil, fmt.Errorf("failed to create Gorm DB: %w", err)
 		}
 		return repository.NewExtractTaskRepository(db), nil
+	})
+	do.Provide(injector, func(i *do.Injector) (*storage.S3Client, error) {
+		return storage.NewS3Client(storage.S3Config{
+			Endpoint:       ev.S3Endpoint,
+			Bucket:         ev.S3Bucket,
+			AccessKey:      ev.S3AccessKey,
+			SecretKey:      ev.S3SecretKey,
+			Region:         ev.S3Region,
+			ForcePathStyle: ev.S3ForcePathStyle,
+		}), nil
 	})
 
 	command := cmd.NewRootCmd(injector)

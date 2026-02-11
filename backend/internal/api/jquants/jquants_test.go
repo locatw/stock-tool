@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -56,109 +57,136 @@ func (m *httpClientMock) Do(request *http.Request) (*http.Response, error) {
 	return result.Get(0).(*http.Response), result.Error(1)
 }
 
-func Test_API_AuthUser(t *testing.T) {
+func Test_API_AuthUser_Success(t *testing.T) {
 	token := "token"
-	errorMessage := "Unexpected error. Please try again later."
 
-	params := []struct {
-		respStatusCode   int
-		respBodyContents string
-		respBody         interface{}
-	}{
-		{
-			200,
-			fmt.Sprintf(`{"refreshToken": "%s"}`, token),
-			AuthUserResponseBody{RefreshToken: token},
-		},
-		{
-			500,
-			fmt.Sprintf(`{"message":"%s"}`, errorMessage),
-			ErrorResponseBody{Message: errorMessage},
-		},
+	req := AuthUserRequest{
+		MailAddress: "user1@mail.test",
+		Password:    "password",
 	}
 
-	for _, param := range params {
-		req := AuthUserRequest{
-			MailAddress: "user1@mail.test",
-			Password:    "password",
-		}
+	rawResp := makeResponse(200, fmt.Sprintf(`{"refreshToken": "%s"}`, token))
 
-		rawResp := makeResponse(param.respStatusCode, param.respBodyContents)
-
-		httpClientMock := new(httpClientMock)
-		httpClientMock.On(
-			"Do",
-			mock.MatchedBy(requestMatcher{
-				ExpectedMethod: http.MethodPost,
-				ExpectedURL:    fmt.Sprintf("%s/token/auth_user", baseUrl),
-				ExpectedHeader: map[string][]string{
-					"Content-Type": {
-						"application/json",
-					},
+	httpClientMock := new(httpClientMock)
+	httpClientMock.On(
+		"Do",
+		mock.MatchedBy(requestMatcher{
+			ExpectedMethod: http.MethodPost,
+			ExpectedURL:    fmt.Sprintf("%s/token/auth_user", baseUrl),
+			ExpectedHeader: map[string][]string{
+				"Content-Type": {
+					"application/json",
 				},
-				ExpectedBodyContents: toStringPointer(
-					fmt.Sprintf(`{"mailaddress":"%s","password":"%s"}`, req.MailAddress, req.Password),
-				),
-			}.ToFunc()),
-		).Return(rawResp, nil)
+			},
+			ExpectedBodyContents: toStringPointer(
+				fmt.Sprintf(`{"mailaddress":"%s","password":"%s"}`, req.MailAddress, req.Password),
+			),
+		}.ToFunc()),
+	).Return(rawResp, nil)
 
-		api := &API{httpClient: httpClientMock}
+	api := &API{httpClient: httpClientMock}
 
-		resp, err := api.AuthUser(req)
+	resp, err := api.AuthUser(req)
 
-		assert.Nil(t, err)
-		assert.Equal(t, rawResp.StatusCode, resp.StatusCode())
-		assert.Equal(t, param.respBody, resp.Body)
-	}
+	assert.Nil(t, err)
+	assert.Equal(t, 200, resp.StatusCode())
+	assert.Equal(t, AuthUserResponseBody{RefreshToken: token}, resp.Body)
+	assert.NotEmpty(t, resp.RawBody)
 }
 
-func Test_API_RefreshToken(t *testing.T) {
-	token := "id-token"
+func Test_API_AuthUser_Error(t *testing.T) {
 	errorMessage := "Unexpected error. Please try again later."
 
-	params := []struct {
-		respStatusCode   int
-		respBodyContents string
-		respBody         interface{}
-	}{
-		{
-			200,
-			fmt.Sprintf(`{"idToken": "%s"}`, token),
-			RefreshTokenResponseBody{IDToken: token},
-		},
-		{
-			500,
-			fmt.Sprintf(`{"message":"%s"}`, errorMessage),
-			ErrorResponseBody{Message: errorMessage},
-		},
+	req := AuthUserRequest{
+		MailAddress: "user1@mail.test",
+		Password:    "password",
 	}
 
-	for _, param := range params {
-		req := RefreshTokenRequest{
-			RefreshToken: "refresh-token",
-		}
+	rawResp := makeResponse(500, fmt.Sprintf(`{"message":"%s"}`, errorMessage))
 
-		rawResp := makeResponse(param.respStatusCode, param.respBodyContents)
+	httpClientMock := new(httpClientMock)
+	httpClientMock.On(
+		"Do",
+		mock.MatchedBy(requestMatcher{
+			ExpectedMethod: http.MethodPost,
+			ExpectedURL:    fmt.Sprintf("%s/token/auth_user", baseUrl),
+			ExpectedHeader: map[string][]string{
+				"Content-Type": {
+					"application/json",
+				},
+			},
+			ExpectedBodyContents: toStringPointer(
+				fmt.Sprintf(`{"mailaddress":"%s","password":"%s"}`, req.MailAddress, req.Password),
+			),
+		}.ToFunc()),
+	).Return(rawResp, nil)
 
-		httpClientMock := new(httpClientMock)
-		httpClientMock.On(
-			"Do",
-			mock.MatchedBy(requestMatcher{
-				ExpectedMethod:       http.MethodPost,
-				ExpectedURL:          fmt.Sprintf("%s/token/auth_refresh?refreshtoken=%s", baseUrl, req.RefreshToken),
-				ExpectedHeader:       map[string][]string{},
-				ExpectedBodyContents: nil,
-			}.ToFunc()),
-		).Return(rawResp, nil)
+	api := &API{httpClient: httpClientMock}
 
-		api := &API{httpClient: httpClientMock}
+	resp, err := api.AuthUser(req)
 
-		resp, err := api.RefreshToken(req)
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
+	assert.Equal(t, errorMessage, err.Error())
+}
 
-		assert.Nil(t, err)
-		assert.Equal(t, rawResp.StatusCode, resp.StatusCode())
-		assert.Equal(t, param.respBody, resp.Body)
+func Test_API_RefreshToken_Success(t *testing.T) {
+	token := "id-token"
+
+	req := RefreshTokenRequest{
+		RefreshToken: "refresh-token",
 	}
+
+	rawResp := makeResponse(200, fmt.Sprintf(`{"idToken": "%s"}`, token))
+
+	httpClientMock := new(httpClientMock)
+	httpClientMock.On(
+		"Do",
+		mock.MatchedBy(requestMatcher{
+			ExpectedMethod:       http.MethodPost,
+			ExpectedURL:          fmt.Sprintf("%s/token/auth_refresh?refreshtoken=%s", baseUrl, req.RefreshToken),
+			ExpectedHeader:       map[string][]string{},
+			ExpectedBodyContents: nil,
+		}.ToFunc()),
+	).Return(rawResp, nil)
+
+	api := &API{httpClient: httpClientMock}
+
+	resp, err := api.RefreshToken(req)
+
+	assert.Nil(t, err)
+	assert.Equal(t, 200, resp.StatusCode())
+	assert.Equal(t, RefreshTokenResponseBody{IDToken: token}, resp.Body)
+	assert.NotEmpty(t, resp.RawBody)
+}
+
+func Test_API_RefreshToken_Error(t *testing.T) {
+	errorMessage := "Unexpected error. Please try again later."
+
+	req := RefreshTokenRequest{
+		RefreshToken: "refresh-token",
+	}
+
+	rawResp := makeResponse(500, fmt.Sprintf(`{"message":"%s"}`, errorMessage))
+
+	httpClientMock := new(httpClientMock)
+	httpClientMock.On(
+		"Do",
+		mock.MatchedBy(requestMatcher{
+			ExpectedMethod:       http.MethodPost,
+			ExpectedURL:          fmt.Sprintf("%s/token/auth_refresh?refreshtoken=%s", baseUrl, req.RefreshToken),
+			ExpectedHeader:       map[string][]string{},
+			ExpectedBodyContents: nil,
+		}.ToFunc()),
+	).Return(rawResp, nil)
+
+	api := &API{httpClient: httpClientMock}
+
+	resp, err := api.RefreshToken(req)
+
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
+	assert.Equal(t, errorMessage, err.Error())
 }
 
 func makeResponse(statusCode int, bodyContents string) *http.Response {
@@ -201,13 +229,7 @@ func (m requestMatcher) Matches(request *http.Request) bool {
 		}
 
 		for _, expectedValue := range expectedValues {
-			found := false
-			for _, value := range values {
-				if value == expectedValue {
-					found = true
-					break
-				}
-			}
+			found := slices.Contains(values, expectedValue)
 			if !found {
 				return false
 			}

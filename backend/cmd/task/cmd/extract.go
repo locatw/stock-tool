@@ -10,6 +10,7 @@ import (
 
 	"stock-tool/internal/api/jquants"
 	"stock-tool/internal/infra/repository"
+	"stock-tool/internal/infra/storage"
 	usecase "stock-tool/internal/usecase/task"
 )
 
@@ -37,12 +38,10 @@ func newExtractJQuantsCmd(injector *do.Injector) *cobra.Command {
 	}
 
 	c.Flags().String("type", "", "type of data to extract from the source")
-	c.Flags().String("dest-url", "", "destination url to save the extracted data (e.g. file://path/to/file.json)")
-	c.Flags().String("code", "", "code of the listed issue to extract (optional, used for specific types)")
+	c.Flags().String("code", "", "code of the listed issue to extract (optional)")
 	c.Flags().String("start-date", "", "start date for extracting data (optional)")
 	c.Flags().String("end-date", "", "end date for extracting data (optional)")
 	c.MarkFlagRequired("type")
-	c.MarkFlagRequired("dest-url")
 
 	return c
 }
@@ -67,11 +66,6 @@ func (c *extractJQuantsCommand) Execute() error {
 		return err
 	}
 
-	destURL, err := c.cmd.Flags().GetString("dest-url")
-	if err != nil {
-		return err
-	}
-
 	startDate, err := c.getOptionDateFlag("start-date")
 	if err != nil {
 		return err
@@ -82,24 +76,26 @@ func (c *extractJQuantsCommand) Execute() error {
 		return err
 	}
 
-	client := do.MustInvoke[*jquants.Client](c.injector)
+	brandFetcher := do.MustInvoke[*jquants.BrandFetcher](c.injector)
+	objectWriter := do.MustInvoke[*storage.S3Client](c.injector)
 	extractTaskRepo := do.MustInvoke[*repository.ExtractTaskRepository](c.injector)
 
 	req := &usecase.ExtractTaskRequest{
 		Source:    "jquants",
 		DataType:  dataType,
+		Timing:    "daily",
 		Code:      code,
-		DestURL:   destURL,
 		StartDate: startDate,
 		EndDate:   endDate,
 	}
 
-	uc := usecase.NewExtractTaskUseCase(client, extractTaskRepo)
-	_, err = uc.Extract(c.cmd.Context(), req)
+	uc := usecase.NewExtractTaskUseCase(brandFetcher, objectWriter, extractTaskRepo)
+	resp, err := uc.Extract(c.cmd.Context(), req)
 	if err != nil {
 		return err
 	}
 
+	fmt.Printf("Extract completed: status=%s, s3Key=%s\n", resp.Status, resp.S3Key)
 	return nil
 }
 

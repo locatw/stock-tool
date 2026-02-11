@@ -25,7 +25,10 @@ var cmpOpts = cmp.Options{
 		}
 		last := p[len(p)-1]
 		if sf, ok := last.(cmp.StructField); ok {
-			return sf.Name() == "CreatedAt" || sf.Name() == "UpdatedAt"
+			switch sf.Name() {
+			case "CreatedAt", "UpdatedAt", "StartedAt", "FinishedAt":
+				return true
+			}
 		}
 		return false
 	}, cmp.Ignore()),
@@ -57,11 +60,10 @@ func (s *ExtractTaskRepositoryTestSuite) TearDownTest() {
 
 func (s *ExtractTaskRepositoryTestSuite) TestCreate() {
 	ctx := context.Background()
-	now := time.Now().UTC().Truncate(time.Microsecond)
-	targetDateTime := now.Add(-24 * time.Hour).Truncate(time.Microsecond)
+	targetDateTime := time.Now().UTC().Add(-24 * time.Hour).Truncate(time.Microsecond)
 
 	s3File := extract.NewExtractedDataS3("path/to/key.csv")
-	exec := extract.NewExtractTaskExecution(targetDateTime, "created")
+	exec := extract.NewRunningExecution(targetDateTime)
 	exec.AddS3File(s3File)
 	task := extract.NewExtractTask("j-quants", "daily-quotes", "daily")
 	task.AddExecution(exec)
@@ -85,10 +87,8 @@ func (s *ExtractTaskRepositoryTestSuite) TestCreate() {
 					ID:             1,
 					ExtractTaskID:  1,
 					TargetDateTime: targetDateTime,
-					Status:         "created",
+					Status:         "running",
 					ErrorInfo:      nil,
-					StartedAt:      nil,
-					FinishedAt:     nil,
 					ExtractedDataS3s: []*ExtractedDataS3{
 						{
 							ID:                     1,
@@ -104,4 +104,111 @@ func (s *ExtractTaskRepositoryTestSuite) TestCreate() {
 	if diff := cmp.Diff(expectedTasks, dbTasks, cmpOpts); diff != "" {
 		s.T().Errorf("task mismatch (-want +got):\n%s", diff)
 	}
+}
+
+func (s *ExtractTaskRepositoryTestSuite) TestFindBySourceAndDataType_Found() {
+	ctx := context.Background()
+
+	task := extract.NewExtractTask("jquants", "brand", "daily")
+	s.Require().NoError(s.repo.Create(ctx, task))
+
+	found, err := s.repo.FindBySourceAndDataType(ctx, "jquants", "brand", "daily")
+
+	s.NoError(err)
+	s.NotNil(found)
+	s.Equal("jquants", found.Source())
+	s.Equal("brand", found.DataType())
+	s.Equal("daily", found.Timing())
+}
+
+func (s *ExtractTaskRepositoryTestSuite) TestFindBySourceAndDataType_NotFound() {
+	ctx := context.Background()
+
+	found, err := s.repo.FindBySourceAndDataType(ctx, "jquants", "brand", "daily")
+
+	s.NoError(err)
+	s.Nil(found)
+}
+
+func (s *ExtractTaskRepositoryTestSuite) TestCreateExecution() {
+	ctx := context.Background()
+
+	task := extract.NewExtractTask("jquants", "brand", "daily")
+	s.Require().NoError(s.repo.Create(ctx, task))
+
+	found, err := s.repo.FindBySourceAndDataType(ctx, "jquants", "brand", "daily")
+	s.Require().NoError(err)
+
+	targetDateTime := time.Now().UTC().Truncate(time.Microsecond)
+	exec := extract.NewRunningExecution(targetDateTime)
+
+	created, err := s.repo.CreateExecution(ctx, found.ID(), exec)
+
+	s.NoError(err)
+	s.NotNil(created)
+	s.Greater(created.ID(), 0)
+	s.Equal(extract.ExecutionStatusRunning, created.Status())
+	s.Equal(targetDateTime, created.TargetDateTime())
+}
+
+func (s *ExtractTaskRepositoryTestSuite) TestUpdateExecution() {
+	ctx := context.Background()
+
+	task := extract.NewExtractTask("jquants", "brand", "daily")
+	s.Require().NoError(s.repo.Create(ctx, task))
+
+	found, err := s.repo.FindBySourceAndDataType(ctx, "jquants", "brand", "daily")
+	s.Require().NoError(err)
+
+	targetDateTime := time.Now().UTC().Truncate(time.Microsecond)
+	exec := extract.NewRunningExecution(targetDateTime)
+	created, err := s.repo.CreateExecution(ctx, found.ID(), exec)
+	s.Require().NoError(err)
+
+	// Reconstruct the entity to simulate the domain transition
+	reconstructed := extract.NewExtractTaskExecutionDirectly(
+		created.ID(),
+		created.TargetDateTime(),
+		created.Status(),
+		created.ErrorInfo(),
+		created.StartedAt(),
+		created.FinishedAt(),
+		created.CreatedAt(),
+		created.UpdatedAt(),
+		[]*extract.ExtractedDataS3{},
+	)
+	reconstructed.Succeed()
+
+	err = s.repo.UpdateExecution(ctx, reconstructed)
+
+	s.NoError(err)
+
+	// Verify status was updated
+	var dbExec ExtractTaskExecution
+	s.Require().NoError(s.db.First(&dbExec, created.ID()).Error)
+	s.Equal("succeeded", dbExec.Status)
+	s.NotNil(dbExec.FinishedAt)
+}
+
+func (s *ExtractTaskRepositoryTestSuite) TestCreateExtractedDataS3() {
+	ctx := context.Background()
+
+	task := extract.NewExtractTask("jquants", "brand", "daily")
+	s.Require().NoError(s.repo.Create(ctx, task))
+
+	found, err := s.repo.FindBySourceAndDataType(ctx, "jquants", "brand", "daily")
+	s.Require().NoError(err)
+
+	targetDateTime := time.Now().UTC().Truncate(time.Microsecond)
+	exec := extract.NewRunningExecution(targetDateTime)
+	created, err := s.repo.CreateExecution(ctx, found.ID(), exec)
+	s.Require().NoError(err)
+
+	s3File := extract.NewExtractedDataS3("landing/jquants/brand/2025/06/01/data.json")
+	s3Created, err := s.repo.CreateExtractedDataS3(ctx, created.ID(), s3File)
+
+	s.NoError(err)
+	s.NotNil(s3Created)
+	s.Greater(s3Created.ID(), 0)
+	s.Equal("landing/jquants/brand/2025/06/01/data.json", s3Created.Key())
 }

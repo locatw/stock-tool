@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 )
 
 type ExtractTask struct {
-	ID                    int `gorm:"primaryKey"`
+	ID                    int
 	Source                string
 	DataType              string
 	Timing                string
@@ -56,7 +57,7 @@ func toExtractTask(e *extract.ExtractTask) *ExtractTask {
 }
 
 type ExtractTaskExecution struct {
-	ID               int `gorm:"primaryKey"`
+	ID               int
 	ExtractTaskID    int
 	TargetDateTime   time.Time
 	Status           string
@@ -76,7 +77,7 @@ func (t *ExtractTaskExecution) ToEntity() *extract.ExtractTaskExecution {
 	return extract.NewExtractTaskExecutionDirectly(
 		t.ID,
 		t.TargetDateTime,
-		t.Status,
+		extract.ExecutionStatus(t.Status),
 		t.ErrorInfo,
 		t.StartedAt,
 		t.FinishedAt,
@@ -90,7 +91,7 @@ func toExtractTaskExecution(e *extract.ExtractTaskExecution) *ExtractTaskExecuti
 	return &ExtractTaskExecution{
 		ID:             e.ID(),
 		TargetDateTime: e.TargetDateTime(),
-		Status:         e.Status(),
+		Status:         string(e.Status()),
 		ErrorInfo:      e.ErrorInfo(),
 		StartedAt:      e.StartedAt(),
 		FinishedAt:     e.FinishedAt(),
@@ -106,7 +107,7 @@ func toExtractTaskExecution(e *extract.ExtractTaskExecution) *ExtractTaskExecuti
 }
 
 type ExtractedDataS3 struct {
-	ID                     int `gorm:"primaryKey"`
+	ID                     int
 	ExtractTaskExecutionID int
 	Key                    string
 	CreatedAt              time.Time `gorm:"autoCreateTime:false"`
@@ -148,7 +149,71 @@ func (r *ExtractTaskRepository) Create(ctx context.Context, task *extract.Extrac
 	return r.db.WithContext(ctx).Create(dbTask).Error
 }
 
-func (r *ExtractTaskRepository) Transaction(ctx context.Context, f func(tx *ExtractTaskRepository) error) error {
+func (r *ExtractTaskRepository) FindBySourceAndDataType(
+	ctx context.Context,
+	source string,
+	dataType string,
+	timing string,
+) (*extract.ExtractTask, error) {
+	var dbTask ExtractTask
+	err := r.db.WithContext(ctx).
+		Where("source = ? AND data_type = ? AND timing = ?", source, dataType, timing).
+		First(&dbTask).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return dbTask.ToEntity(), nil
+}
+
+func (r *ExtractTaskRepository) CreateExecution(
+	ctx context.Context,
+	taskID int,
+	exec *extract.ExtractTaskExecution,
+) (*extract.ExtractTaskExecution, error) {
+	dbExec := toExtractTaskExecution(exec)
+	dbExec.ExtractTaskID = taskID
+	if err := r.db.WithContext(ctx).Create(dbExec).Error; err != nil {
+		return nil, err
+	}
+	return dbExec.ToEntity(), nil
+}
+
+func (r *ExtractTaskRepository) UpdateExecution(
+	ctx context.Context,
+	exec *extract.ExtractTaskExecution,
+) error {
+	dbExec := toExtractTaskExecution(exec)
+	return r.db.WithContext(ctx).
+		Model(&ExtractTaskExecution{}).
+		Where("id = ?", dbExec.ID).
+		Updates(map[string]any{
+			"status":      dbExec.Status,
+			"error_info":  dbExec.ErrorInfo,
+			"finished_at": dbExec.FinishedAt,
+			"updated_at":  dbExec.UpdatedAt,
+		}).Error
+}
+
+func (r *ExtractTaskRepository) CreateExtractedDataS3(
+	ctx context.Context,
+	executionID int,
+	s3File *extract.ExtractedDataS3,
+) (*extract.ExtractedDataS3, error) {
+	dbS3 := toExtractedDataS3(s3File)
+	dbS3.ExtractTaskExecutionID = executionID
+	if err := r.db.WithContext(ctx).Create(dbS3).Error; err != nil {
+		return nil, err
+	}
+	return dbS3.ToEntity(), nil
+}
+
+func (r *ExtractTaskRepository) Transaction(
+	ctx context.Context,
+	f func(tx *ExtractTaskRepository) error,
+) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		return f(&ExtractTaskRepository{db: tx})
 	})

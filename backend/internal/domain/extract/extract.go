@@ -1,6 +1,19 @@
 package extract
 
-import "time"
+import (
+	"fmt"
+	"time"
+
+	"github.com/google/uuid"
+)
+
+type ExecutionStatus string
+
+const (
+	ExecutionStatusRunning   ExecutionStatus = "running"
+	ExecutionStatusSucceeded ExecutionStatus = "succeeded"
+	ExecutionStatusFailed    ExecutionStatus = "failed"
+)
 
 type ExtractTask struct {
 	id        int
@@ -80,7 +93,7 @@ func (t *ExtractTask) Executions() []*ExtractTaskExecution {
 type ExtractTaskExecution struct {
 	id             int
 	targetDateTime time.Time
-	status         string
+	status         ExecutionStatus
 	errorInfo      *string
 	startedAt      *time.Time
 	finishedAt     *time.Time
@@ -90,13 +103,13 @@ type ExtractTaskExecution struct {
 	s3Files []*ExtractedDataS3
 }
 
-func NewExtractTaskExecution(targetDateTime time.Time, status string) *ExtractTaskExecution {
+func NewRunningExecution(targetDateTime time.Time) *ExtractTaskExecution {
 	now := time.Now()
 	return &ExtractTaskExecution{
 		targetDateTime: targetDateTime,
-		status:         status,
+		status:         ExecutionStatusRunning,
 		errorInfo:      nil,
-		startedAt:      nil,
+		startedAt:      &now,
 		finishedAt:     nil,
 		createdAt:      now,
 		updatedAt:      now,
@@ -107,7 +120,7 @@ func NewExtractTaskExecution(targetDateTime time.Time, status string) *ExtractTa
 func NewExtractTaskExecutionDirectly(
 	id int,
 	targetDateTime time.Time,
-	status string,
+	status ExecutionStatus,
 	errorInfo *string,
 	startedAt *time.Time,
 	finishedAt *time.Time,
@@ -128,6 +141,21 @@ func NewExtractTaskExecutionDirectly(
 	}
 }
 
+func (t *ExtractTaskExecution) Succeed() {
+	now := time.Now()
+	t.status = ExecutionStatusSucceeded
+	t.finishedAt = &now
+	t.updatedAt = now
+}
+
+func (t *ExtractTaskExecution) Fail(errorInfo string) {
+	now := time.Now()
+	t.status = ExecutionStatusFailed
+	t.errorInfo = &errorInfo
+	t.finishedAt = &now
+	t.updatedAt = now
+}
+
 func (t *ExtractTaskExecution) AddS3File(file *ExtractedDataS3) {
 	t.s3Files = append(t.s3Files, file)
 }
@@ -140,7 +168,7 @@ func (t *ExtractTaskExecution) TargetDateTime() time.Time {
 	return t.targetDateTime
 }
 
-func (t *ExtractTaskExecution) Status() string {
+func (t *ExtractTaskExecution) Status() ExecutionStatus {
 	return t.status
 }
 
@@ -212,4 +240,24 @@ func (s *ExtractedDataS3) CreatedAt() time.Time {
 
 func (s *ExtractedDataS3) UpdatedAt() time.Time {
 	return s.updatedAt
+}
+
+// GenerateS3Key generates an S3 object key following the landing layer path convention:
+// landing/{source}/{data_type}/{yyyy}/{mm}/{dd}/{timestamp}_{uuid}.{ext}
+func GenerateS3Key(source string, dataType string, executionTime time.Time, ext string) string {
+	utc := executionTime.UTC()
+	timestamp := utc.Format("20060102T150405Z")
+	uuidSuffix := uuid.New().String()[:8]
+
+	return fmt.Sprintf(
+		"landing/%s/%s/%04d/%02d/%02d/%s_%s.%s",
+		source,
+		dataType,
+		utc.Year(),
+		utc.Month(),
+		utc.Day(),
+		timestamp,
+		uuidSuffix,
+		ext,
+	)
 }
