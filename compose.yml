@@ -16,6 +16,7 @@ services:
       - app-go-vol:/go
     depends_on:
       - db
+      - seaweedfs
   db:
     image: postgres:17.5
     ports:
@@ -26,6 +27,16 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD:-1234}
     volumes:
       - db-vol:/var/lib/postgresql/data
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest
+    command: "server -s3 -dir=/data"
+    ports:
+      - 8333:8333
+      - 9333:9333
+      - 8888:8888
+    volumes:
+      - seaweedfs-vol:/data
 volumes:
   app-go-vol:
   db-vol:
+  seaweedfs-vol:

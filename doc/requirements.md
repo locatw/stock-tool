@@ -8,10 +8,10 @@
 
 ## Environment Setup
 
-Start local PostgreSQL:
+Start local infrastructure:
 
 ```bash
-docker compose up db
+docker compose up db seaweedfs
 ```
 
 Three `.env` files are needed (copy from `.env.template` in each location):
