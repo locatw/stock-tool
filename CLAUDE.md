@@ -24,3 +24,7 @@ cd backend && go run ./cmd/cli/ migrate up     # Apply migrations
 make lint                                      # Run golangci-lint
 make lint-fix                                  # Run golangci-lint with auto-fix
 ```
+
+## Hooks
+
+A **Stop hook** (`.claude/hooks/lint-go.sh`) runs `make lint` automatically when Claude finishes a task. If any `.go` files were changed and lint violations are found, the hook blocks Claude from stopping and feeds the violations back so Claude can fix them before completing.
