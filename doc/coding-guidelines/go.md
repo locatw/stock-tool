@@ -72,7 +72,44 @@ for _, file := range files {
   func (r *ExtractTaskRepository) Create(ctx context.Context, task *ExtractTask, files []*ExtractedDataFile, s3Files []*ExtractedDataS3) error {
   ```
 
-## 6. Error Checking
+## 6. Return Statements
+
+Return the result of a function call directly instead of storing it in a variable only to return it:
+
+```go
+// Good
+func (c *cobra.Command) RunE(cmd *cobra.Command, args []string) error {
+    return NewAPICommand(db, port).Run(cmd.Context())
+}
+
+// Bad — unnecessary variable and conditional
+func (c *cobra.Command) RunE(cmd *cobra.Command, args []string) error {
+    if err := NewAPICommand(db, port).Run(cmd.Context()); err != nil {
+        return err
+    }
+    return nil
+}
+```
+
+This also applies to non-error values:
+
+```go
+// Good
+func (r *Repository) Find(ctx context.Context, id int) (*Entity, error) {
+    return r.findByID(ctx, id)
+}
+
+// Bad
+func (r *Repository) Find(ctx context.Context, id int) (*Entity, error) {
+    entity, err := r.findByID(ctx, id)
+    if err != nil {
+        return nil, err
+    }
+    return entity, nil
+}
+```
+
+## 7. Error Checking
 
 Use `:=` instead of `=` when checking errors in a single line if statement:
 
@@ -90,7 +127,7 @@ if err = sqlDB.Ping(); err != nil {
 
 The `:=` operator makes it clear that we're creating a new error variable in the if statement's scope.
 
-## 7. GORM Models
+## 8. GORM Models
 
 ### Configuration Tags
 
@@ -176,7 +213,7 @@ func toDBModel(e *domain.Entity) *DBModel {
 }
 ```
 
-## 8. Repository Rules
+## 9. Repository Rules
 
 - Do not handle transactions within repository methods; transaction control belongs in the upper layer
 - Use "Repository" instead of "Repo" for type names
