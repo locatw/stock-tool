@@ -1,22 +1,4 @@
 services:
-  app:
-    image: golang:1.24
-    environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=${DB_PASSWORD:-1234}
-      - TEST_DB_HOST=db
-      - TEST_DB_PORT=5432
-      - TEST_DB_USER=postgres
-      - TEST_DB_PASSWORD=${DB_PASSWORD:-1234}
-    working_dir: /app
-    volumes:
-      - ./app:/app
-      - app-go-vol:/go
-    depends_on:
-      - db
-      - seaweedfs
   db:
     image: postgres:17.5
     ports:
@@ -37,6 +19,5 @@ services:
     volumes:
       - seaweedfs-vol:/data
 volumes:
-  app-go-vol:
   db-vol:
   seaweedfs-vol:
