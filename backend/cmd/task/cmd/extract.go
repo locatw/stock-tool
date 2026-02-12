@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/samber/do"
-	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 
 	"stock-tool/internal/api/jquants"
@@ -111,7 +110,7 @@ func (c *extractJQuantsCommand) getOptionStringFlag(flag string) (*string, error
 		return nil, nil
 	}
 
-	return lo.ToPtr(s), nil
+	return new(s), nil
 }
 
 func (c *extractJQuantsCommand) getOptionDateFlag(flag string) (*time.Time, error) {
@@ -131,5 +130,5 @@ func (c *extractJQuantsCommand) getOptionDateFlag(flag string) (*time.Time, erro
 		return nil, fmt.Errorf("invalid date format: %v", err)
 	}
 
-	return lo.ToPtr(date), nil
+	return new(date), nil
 }
