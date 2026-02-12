@@ -48,7 +48,7 @@ func (c *initDBCommand) Execute(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "database initialized successfully.")
+	fmt.Fprintln(cmd.OutOrStdout(), "database initialized successfully.")
 
 	return nil
 }

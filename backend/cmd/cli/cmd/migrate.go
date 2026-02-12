@@ -146,7 +146,7 @@ func (m *migrateCommand) List(cmd *cobra.Command) error {
 		version := parts[0]
 		desc := strings.Join(parts[1:], " ")
 
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s: %s\n", version, desc)
+		fmt.Fprintf(cmd.OutOrStdout(), "%s: %s\n", version, desc)
 	}
 
 	return nil
@@ -170,7 +170,7 @@ func (m *migrateCommand) Down(cmd *cobra.Command) error {
 	}
 
 	if !m.askConfirmation(cmd, "Are you sure you want to apply all down migrations?") {
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Aborted.")
+		fmt.Fprintln(cmd.OutOrStdout(), "Aborted.")
 		return nil
 	}
 
@@ -196,7 +196,7 @@ func (m *migrateCommand) Goto(cmd *cobra.Command, args []string) error {
 
 	if uint(version) < cur {
 		if !m.askConfirmation(cmd, "Are you sure you want to apply down migrations?") {
-			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Aborted.")
+			fmt.Fprintln(cmd.OutOrStdout(), "Aborted.")
 			return nil
 		}
 	}
@@ -216,7 +216,7 @@ func (m *migrateCommand) Version(cmd *cobra.Command) error {
 		return err
 	}
 
-	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Current migration version: %d\n", version)
+	fmt.Fprintf(cmd.OutOrStdout(), "Current migration version: %d\n", version)
 
 	return nil
 }
@@ -248,7 +248,7 @@ func (m *migrateCommand) makeMigrationInstance(ctx context.Context) (*migrate.Mi
 }
 
 func (m *migrateCommand) askConfirmation(cmd *cobra.Command, q string) bool {
-	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s (y/n): ", q)
+	fmt.Fprintf(cmd.OutOrStdout(), "%s (y/n): ", q)
 
 	s := bufio.NewScanner(cmd.InOrStdin())
 	s.Scan()

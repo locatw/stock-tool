@@ -15,6 +15,11 @@ linters:
     - lll
     - bodyclose
   settings:
+    errcheck:
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
     lll:
       line-length: 120
     revive:
