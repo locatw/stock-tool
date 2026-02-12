@@ -107,7 +107,8 @@ func (s *DBTest) TearDownSuite() {
 func (s *DBTest) ApplyMigrations() {
 	db := s.GetDB()
 
-	db.Exec("CREATE SCHEMA IF NOT EXISTS stock")
+	_, err := db.Exec("CREATE SCHEMA IF NOT EXISTS stock")
+	s.Require().NoError(err)
 
 	driver, err := postgres.WithInstance(db, &postgres.Config{
 		SchemaName: "stock",
@@ -133,7 +134,8 @@ func (s *DBTest) CleanupMigrations() error {
 
 	s.Require().NoError(mig.Down())
 
-	db.Exec("DROP SCHEMA IF EXISTS stock")
+	_, err = db.Exec("DROP SCHEMA IF EXISTS stock")
+	s.Require().NoError(err)
 
 	return nil
 }

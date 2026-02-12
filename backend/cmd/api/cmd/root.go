@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"os/signal"
@@ -40,7 +41,7 @@ func (c *APICommand) Run(ctx context.Context) error {
 	defer stop()
 
 	go func() {
-		if err := e.Start(fmt.Sprintf(":%d", c.port)); err != nil && err != http.ErrServerClosed {
+		if err := e.Start(fmt.Sprintf(":%d", c.port)); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			e.Logger.Fatal(err)
 		}
 	}()

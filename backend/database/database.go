@@ -17,11 +17,11 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-const (
-	SchemaName = "stock"
+const SchemaName = "stock"
 
-	CTXKeyDBConfig = "DBConfig"
-)
+type ctxKey string
+
+const CTXKeyDBConfig ctxKey = "DBConfig"
 
 type HeadColumns struct {
 	ID uint `gorm:"primarykey"`

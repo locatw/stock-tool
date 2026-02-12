@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"stock-tool/database"
 	"strconv"
 	"strings"
 
@@ -15,6 +14,8 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/spf13/cobra"
+
+	"stock-tool/database"
 )
 
 const (
@@ -26,7 +27,7 @@ func newMigrateCmd() *cobra.Command {
 		Use:   "migrate",
 		Short: "database migration commands",
 		Run: func(c *cobra.Command, args []string) {
-			c.Help()
+			_ = c.Help()
 		},
 	}
 
@@ -145,7 +146,7 @@ func (m *migrateCommand) List(cmd *cobra.Command) error {
 		version := parts[0]
 		desc := strings.Join(parts[1:], " ")
 
-		fmt.Fprintf(cmd.OutOrStdout(), "%s: %s\n", version, desc)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s: %s\n", version, desc)
 	}
 
 	return nil
@@ -169,7 +170,7 @@ func (m *migrateCommand) Down(cmd *cobra.Command) error {
 	}
 
 	if !m.askConfirmation(cmd, "Are you sure you want to apply all down migrations?") {
-		fmt.Fprintln(cmd.OutOrStdout(), "Aborted.")
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Aborted.")
 		return nil
 	}
 
@@ -195,7 +196,7 @@ func (m *migrateCommand) Goto(cmd *cobra.Command, args []string) error {
 
 	if uint(version) < cur {
 		if !m.askConfirmation(cmd, "Are you sure you want to apply down migrations?") {
-			fmt.Fprintln(cmd.OutOrStdout(), "Aborted.")
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Aborted.")
 			return nil
 		}
 	}
@@ -215,7 +216,7 @@ func (m *migrateCommand) Version(cmd *cobra.Command) error {
 		return err
 	}
 
-	fmt.Fprintf(cmd.OutOrStdout(), "Current migration version: %d\n", version)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Current migration version: %d\n", version)
 
 	return nil
 }
@@ -230,7 +231,11 @@ func (m *migrateCommand) makeMigrationInstance(ctx context.Context) (*migrate.Mi
 	if err := db.Connect(); err != nil {
 		return nil, err
 	}
-	defer db.Shutdown()
+	defer func() {
+		if err := db.Shutdown(); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to shutdown database: %v\n", err)
+		}
+	}()
 
 	driver, err := postgres.WithInstance(db.DB(), &postgres.Config{
 		SchemaName: "stock",
@@ -243,7 +248,7 @@ func (m *migrateCommand) makeMigrationInstance(ctx context.Context) (*migrate.Mi
 }
 
 func (m *migrateCommand) askConfirmation(cmd *cobra.Command, q string) bool {
-	fmt.Fprintf(cmd.OutOrStdout(), "%s (y/n): ", q)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s (y/n): ", q)
 
 	s := bufio.NewScanner(cmd.InOrStdin())
 	s.Scan()

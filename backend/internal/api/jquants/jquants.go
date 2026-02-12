@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -19,8 +20,8 @@ const (
 )
 
 var (
-	NotAuthorizedError = errors.New("Not authorized.")
-	timezone_jst       = time.FixedZone("Asia/Tokyo", 9*60*60)
+	ErrNotAuthorized = errors.New("not authorized")
+	timezone_jst     = time.FixedZone("Asia/Tokyo", 9*60*60)
 )
 
 type Date struct {
@@ -236,7 +237,11 @@ func (c *API) AuthUser(request AuthUserRequest) (*Response[AuthUserResponseBody]
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to close response body: %v\n", err)
+		}
+	}()
 
 	rawBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -270,7 +275,11 @@ func (c *API) RefreshToken(request RefreshTokenRequest) (*Response[RefreshTokenR
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to close response body: %v\n", err)
+		}
+	}()
 
 	rawBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -316,7 +325,11 @@ func (c *API) ListBrand(
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to close response body: %v\n", err)
+		}
+	}()
 
 	rawBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -371,7 +384,11 @@ func (c *API) GetDailyQuotes(
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to close response body: %v\n", err)
+		}
+	}()
 
 	rawBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -573,7 +590,7 @@ func (c *Client) ListBrands(
 	request ListBrandRequest,
 ) (*Response[ListBrandResponseBody], error) {
 	if !c.IsAuthorized() {
-		return nil, NotAuthorizedError
+		return nil, ErrNotAuthorized
 	}
 
 	return withRefreshToken(c, func() (*Response[ListBrandResponseBody], error) {
@@ -585,7 +602,7 @@ func (c *Client) GetDailyQuotes(
 	request GetDailyQuoteRequest,
 ) (*Response[GetDailyQuoteResponseBody], error) {
 	if !c.IsAuthorized() {
-		return nil, NotAuthorizedError
+		return nil, ErrNotAuthorized
 	}
 
 	return withRefreshToken(c, func() (*Response[GetDailyQuoteResponseBody], error) {

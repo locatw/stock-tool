@@ -4,16 +4,17 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"stock-tool/cmd/task/cmd"
-	"stock-tool/database"
-	"stock-tool/internal/api/jquants"
-	"stock-tool/internal/infra/repository"
-	"stock-tool/internal/infra/storage"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/samber/do"
+
+	"stock-tool/cmd/task/cmd"
+	"stock-tool/database"
+	"stock-tool/internal/api/jquants"
+	"stock-tool/internal/infra/repository"
+	"stock-tool/internal/infra/storage"
 )
 
 const (

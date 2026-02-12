@@ -1,15 +1,16 @@
 package usecase
 
 import (
-	"stock-tool/internal/domain/extract"
 	"time"
+
+	"stock-tool/internal/domain/extract"
 )
 
 type ExtractTaskRequest struct {
 	Source    string
-	DataType string
-	Timing   string
-	Code     *string
+	DataType  string
+	Timing    string
+	Code      *string
 	StartDate *time.Time
 	EndDate   *time.Time
 }

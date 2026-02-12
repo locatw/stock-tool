@@ -9,7 +9,7 @@ func NewRootCmd() *cobra.Command {
 		Use:   "cli",
 		Short: "stock-tool command line tool",
 		Run: func(c *cobra.Command, args []string) {
-			c.Help()
+			_ = c.Help()
 		},
 	}
 

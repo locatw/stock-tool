@@ -3,11 +3,12 @@ package main
 import (
 	"fmt"
 	"os"
-	"stock-tool/cmd/api/cmd"
-	"stock-tool/database"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
+
+	"stock-tool/cmd/api/cmd"
+	"stock-tool/database"
 )
 
 const (
@@ -58,7 +59,11 @@ func main() {
 		fmt.Printf("failed to connect to database: %v\n", err)
 		os.Exit(1)
 	}
-	defer rawDB.Shutdown()
+	defer func() {
+		if err := rawDB.Shutdown(); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to shutdown database: %v\n", err)
+		}
+	}()
 
 	command := cmd.NewRootCmd(rawDB.DB(), ev.APIPort)
 

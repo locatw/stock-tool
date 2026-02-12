@@ -18,7 +18,7 @@ func newExtractCmd(injector *do.Injector) *cobra.Command {
 		Use:   "extract",
 		Short: "extract data from a source",
 		Run: func(c *cobra.Command, args []string) {
-			c.Help()
+			_ = c.Help()
 		},
 	}
 
@@ -40,7 +40,7 @@ func newExtractJQuantsCmd(injector *do.Injector) *cobra.Command {
 	c.Flags().String("code", "", "code of the listed issue to extract (optional)")
 	c.Flags().String("start-date", "", "start date for extracting data (optional)")
 	c.Flags().String("end-date", "", "end date for extracting data (optional)")
-	c.MarkFlagRequired("type")
+	_ = c.MarkFlagRequired("type")
 
 	return c
 }
@@ -125,9 +125,9 @@ func (c *extractJQuantsCommand) getOptionDateFlag(flag string) (*time.Time, erro
 		return nil, nil
 	}
 
-	date, err := time.Parse("2006-01-02", dateStr)
+	date, err := time.Parse("2006-01-02", dateStr) //nolint:staticcheck // SA4006: new(expr) is valid Go 1.26 syntax
 	if err != nil {
-		return nil, fmt.Errorf("invalid date format: %v", err)
+		return nil, fmt.Errorf("invalid date format: %w", err)
 	}
 
 	return new(date), nil

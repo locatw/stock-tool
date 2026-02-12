@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"stock-tool/cmd/cli/cmd"
-	"stock-tool/database"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
+
+	"stock-tool/cmd/cli/cmd"
+	"stock-tool/database"
 )
 
 const (

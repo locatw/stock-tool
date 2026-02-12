@@ -66,6 +66,7 @@ func Test_API_AuthUser_Success(t *testing.T) {
 	}
 
 	rawResp := makeResponse(200, fmt.Sprintf(`{"refreshToken": "%s"}`, token))
+	defer rawResp.Body.Close()
 
 	httpClientMock := new(httpClientMock)
 	httpClientMock.On(
@@ -103,6 +104,7 @@ func Test_API_AuthUser_Error(t *testing.T) {
 	}
 
 	rawResp := makeResponse(500, fmt.Sprintf(`{"message":"%s"}`, errorMessage))
+	defer rawResp.Body.Close()
 
 	httpClientMock := new(httpClientMock)
 	httpClientMock.On(
@@ -138,6 +140,7 @@ func Test_API_RefreshToken_Success(t *testing.T) {
 	}
 
 	rawResp := makeResponse(200, fmt.Sprintf(`{"idToken": "%s"}`, token))
+	defer rawResp.Body.Close()
 
 	httpClientMock := new(httpClientMock)
 	httpClientMock.On(
@@ -168,6 +171,7 @@ func Test_API_RefreshToken_Error(t *testing.T) {
 	}
 
 	rawResp := makeResponse(500, fmt.Sprintf(`{"message":"%s"}`, errorMessage))
+	defer rawResp.Body.Close()
 
 	httpClientMock := new(httpClientMock)
 	httpClientMock.On(

@@ -10,7 +10,7 @@ func NewRootCmd(injector *do.Injector) *cobra.Command {
 		Use:   "task",
 		Short: "stock-tool task",
 		Run: func(c *cobra.Command, args []string) {
-			c.Help()
+			_ = c.Help()
 		},
 	}
 

@@ -3,9 +3,11 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"stock-tool/database"
+	"os"
 
 	"github.com/spf13/cobra"
+
+	"stock-tool/database"
 )
 
 func newInitDBCmd() *cobra.Command {
@@ -36,13 +38,17 @@ func (c *initDBCommand) Execute(cmd *cobra.Command, args []string) error {
 	if err := db.Connect(); err != nil {
 		return err
 	}
-	defer db.Shutdown()
+	defer func() {
+		if err := db.Shutdown(); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to shutdown database: %v\n", err)
+		}
+	}()
 
 	if err := db.Init(); err != nil {
 		return err
 	}
 
-	fmt.Fprintln(cmd.OutOrStdout(), "database initialized successfully.")
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "database initialized successfully.")
 
 	return nil
 }
