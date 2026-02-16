@@ -21,11 +21,7 @@ Following ArgoCD best practices, source code and Kubernetes manifests are mainta
 - **Application repository** (`stock-tool`) — source code, Dockerfiles, CI pipelines
 - **Infrastructure repository** — all Kubernetes manifests, ArgoCD configuration, platform services
 
-This separation provides:
-
-- **Independent release cycles** — application code changes do not trigger GitOps reconciliation until a manifest update references the new image tag
-- **Clean audit trail** — Git history in the infrastructure repository reflects only deployment changes
-- **Access control** — different teams or automation can own each repository independently
+Rationale: independent release cycles (app changes don't trigger GitOps until manifest update), clean audit trail (infra Git history = deployment changes only), separate access control.
 
 ### Infrastructure Repository Structure
 
@@ -52,19 +48,11 @@ infra-repo/
 
 ### Application Repository Scope
 
-The `stock-tool` repository contains only:
-
-- Application source code (Go, Python)
-- Dockerfiles for building container images
-- CI pipeline definitions
-- Development tooling (`compose.yaml`, linters, test configuration)
-
-Kubernetes manifests, Kustomize overlays, and ArgoCD Application definitions reside exclusively in the infrastructure repository.
+`stock-tool` contains: source code (Go, Python), Dockerfiles, CI pipelines, dev tooling (`compose.yaml`, linters, tests). All k8s manifests and ArgoCD definitions live in the infrastructure repository.
 
 ### Manifest Management
 
-All Kubernetes manifests — both infrastructure services and application workloads — are managed with Kustomize using a base/overlay pattern.
-Each environment (production, local) has its own overlay directory that patches the shared base.
+All k8s manifests use Kustomize base/overlay pattern. Each environment (production, local) has its own overlay directory patching the shared base.
 
 ### Namespace Strategy
 
@@ -88,7 +76,7 @@ ArgoCD manages deployments using a combination of App-of-Apps and ApplicationSet
 
 ### Phase 1: Docker Compose
 
-Docker Compose provides infrastructure services locally while application code runs natively on the host. This extends the existing `compose.yaml` configuration.
+Infrastructure in containers, application on host. Extends existing `compose.yaml`.
 
 **Architecture:**
 
@@ -110,14 +98,14 @@ Docker Compose provides infrastructure services locally while application code r
 
 **Principles:**
 
-- **Infrastructure in containers, application on host** — `compose.yaml` runs PostgreSQL, SeaweedFS, and other infrastructure services; Go and Python execute natively for fast iteration and debugger access
-- **Compose profiles** — group services by function so developers start only what they need (e.g., `docker compose --profile lakehouse up`)
-- **Consistent naming** — service names and environment variable names align with the Kubernetes deployment to minimize configuration differences when transitioning to Phase 2
-- **Environment variables** — managed via `.env` file, following the existing pattern in the repository
+- `compose.yaml` runs PostgreSQL, SeaweedFS, etc.; Go/Python execute natively for fast iteration
+- Compose profiles group services by function (`docker compose --profile lakehouse up`)
+- Service/env-var names align with k8s deployment for Phase 2 transition
+- Environment variables via `.env` file
 
 ### Phase 2: Kind + Kustomize Overlay
 
-Once the production Kubernetes cluster is operational in the infrastructure repository, the local environment transitions to Kind with Kustomize overlays.
+Transitions to Kind with Kustomize overlays once the production k8s cluster is operational.
 
 **Architecture:**
 
@@ -138,13 +126,7 @@ Once the production Kubernetes cluster is operational in the infrastructure repo
 └──────────────────────────────────────────────┘
 ```
 
-**Overlay strategy (Pattern B: overlays in infrastructure repository):**
-
-Local overlays live alongside production overlays in the infrastructure repository. This approach ensures:
-
-- Base manifests and all overlays are managed in a single repository, maintaining consistency
-- All environments (production, local) are visible in one place
-- Changes to base manifests are immediately reflected in all overlays
+**Overlay strategy:** Local overlays live alongside production overlays in the infrastructure repository. Rationale: single repo for all environments ensures consistency; base changes reflect in all overlays immediately.
 
 **Local overlay patches:**
 
@@ -155,13 +137,7 @@ Local overlays live alongside production overlays in the infrastructure reposito
 | External ingress | NodePort or port-forward |
 | Replicas for HA | Single replica |
 
-**Image loading:**
-
-Application container images are loaded into the Kind cluster directly from the local Docker daemon:
-
-```bash
-kind load docker-image stock-tool:latest --name stock-tool
-```
+**Image loading:** `kind load docker-image stock-tool:latest --name stock-tool`
 
 ## Phased Adoption
 

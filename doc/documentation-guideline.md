@@ -52,6 +52,20 @@ Documentation that enumerates current contents creates a maintenance burden — 
 Readers can discover current contents by looking at the filesystem.
 Documentation should focus on what cannot be inferred from the code itself.
 
+## Principle: Token-Efficient Writing
+
+Documentation is read by both humans and LLM agents. Write for efficient
+information density:
+
+- Prefer bullet lists and tables over prose paragraphs for factual content
+- State the rule first, then rationale as inline annotation
+  ("Rationale: ...") rather than a separate paragraph
+- For option comparisons, use tables (Option | Behavior | Pros | Cons)
+- Eliminate structural filler ("This section defines..." / "The following
+  describes...") — let headings convey structure
+- Apply DRY across documents: explain a concept fully in one canonical
+  location, use brief summary + link elsewhere
+
 ## Principle: DRY (Don't Repeat Yourself)
 
 Avoid duplicating operational procedures and frequently changing values across multiple documents.
