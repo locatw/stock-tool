@@ -18,5 +18,5 @@ Applications built with Cobra:
 
 ## External Services
 
-- **J-Quants API** — Source for Japanese stock market data (brands, daily quotes)
-- **PostgreSQL** — Primary data store (schema: `stock`)
+- J-Quants API — Source for Japanese stock market data (brands, daily quotes)
+- PostgreSQL — Primary data store (schema: `stock`)

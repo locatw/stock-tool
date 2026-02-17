@@ -6,26 +6,26 @@ Stock-tool adopts a lakehouse approach based on the Medallion Architecture to ma
 
 | Layer | Purpose | Format | Example |
 |---|---|---|---|
-| **Landing** | Byte-for-byte preservation of source data | Original (JSON, CSV, etc.) | API response files, downloaded datasets |
-| **Bronze** | Source data converted to a queryable columnar format | Iceberg (Parquet) | API responses as Iceberg tables |
-| **Silver (Curated)** | Cleansed, normalized, analysis-ready data | Iceberg (Parquet) | Daily stock prices, brand master |
-| **Gold (Analytics)** | Computed analysis results | Iceberg (Parquet) | Technical indicators, ML features, predictions |
+| Landing | Byte-for-byte preservation of source data | Original (JSON, CSV, etc.) | API response files, downloaded datasets |
+| Bronze | Source data converted to a queryable columnar format | Iceberg (Parquet) | API responses as Iceberg tables |
+| Silver (Curated) | Cleansed, normalized, analysis-ready data | Iceberg (Parquet) | Daily stock prices, brand master |
+| Gold (Analytics) | Computed analysis results | Iceberg (Parquet) | Technical indicators, ML features, predictions |
 
 Landing stores raw files on Ceph. Bronze–Gold are Apache Iceberg tables on the same Ceph storage. PostgreSQL: application state only (task scheduling, execution tracking).
 
 ## Infrastructure
 
-- **Kubernetes** on a Proxmox cluster — all components run as k8s workloads
-- **Ceph (RadosGW)** — S3-compatible object storage serving as the lakehouse storage layer
-- **AWS** — minimal use (log aggregation); not the primary data store
-- **PostgreSQL** — application metadata only (extract tasks, scheduling state)
+- Kubernetes on a Proxmox cluster — all components run as k8s workloads
+- Ceph (RadosGW) — S3-compatible object storage serving as the lakehouse storage layer
+- AWS — minimal use (log aggregation); not the primary data store
+- PostgreSQL — application metadata only (extract tasks, scheduling state)
 
 ### Language Roles
 
 | Language | Responsibility |
 |---|---|
-| **Go** | Automated data extraction, Landing/Bronze/Silver writes, notifications, scheduled jobs |
-| **Python** | Interactive analysis (Marimo), Gold layer generation, ML pipeline, experiment tracking |
+| Go | Automated data extraction, Landing/Bronze/Silver writes, notifications, scheduled jobs |
+| Python | Interactive analysis (Marimo), Gold layer generation, ML pipeline, experiment tracking |
 
 ## Technology Stack
 
@@ -44,28 +44,28 @@ Landing stores raw files on Ceph. Bronze–Gold are Apache Iceberg tables on the
 
 ### Landing (Raw Files)
 
-- **Writers:** Go (k8s CronJob) | **Readers:** Go (Bronze conversion)
-- **Key property:** Byte-for-byte fidelity — re-ingest from Landing without re-fetch
-- **Retention:** Long-term system of record
-- **Path:** `s3://locatw-{env}-stocktool-lakehouse/landing/{source}/{data_type}/{yyyy}/{mm}/{dd}/{timestamp}.{ext}`
+- Writers: Go (k8s CronJob) | Readers: Go (Bronze conversion)
+- Key property: Byte-for-byte fidelity — re-ingest from Landing without re-fetch
+- Retention: Long-term system of record
+- Path: `s3://locatw-{env}-stocktool-lakehouse/landing/{source}/{data_type}/{yyyy}/{mm}/{dd}/{timestamp}.{ext}`
 
 ### Bronze (Queryable Raw)
 
-- **Writers:** Go (from Landing) | **Readers:** Go (Silver transform), Python (exploration)
-- **Key property:** SQL-queryable (DuckDB) with original data semantics; format change only, no business logic
-- **Path:** `s3://locatw-{env}-stocktool-lakehouse/bronze/{source}_{data_type}/`
+- Writers: Go (from Landing) | Readers: Go (Silver transform), Python (exploration)
+- Key property: SQL-queryable (DuckDB) with original data semantics; format change only, no business logic
+- Path: `s3://locatw-{env}-stocktool-lakehouse/bronze/{source}_{data_type}/`
 
 ### Silver (Curated)
 
-- **Writers:** Go (from Bronze) | **Readers:** Python (analysis, feature engineering)
-- **Transformations:** Type casting, null handling, dedup, field renaming
-- **Path:** `s3://locatw-{env}-stocktool-lakehouse/silver/{entity}/`
+- Writers: Go (from Bronze) | Readers: Python (analysis, feature engineering)
+- Transformations: Type casting, null handling, dedup, field renaming
+- Path: `s3://locatw-{env}-stocktool-lakehouse/silver/{entity}/`
 
 ### Gold (Analytics)
 
-- **Writers:** Python (analysis, ML pipeline) | **Readers:** Python (model training, reporting)
-- **Content:** Technical indicators, prediction features, model outputs
-- **Path:** `s3://locatw-{env}-stocktool-lakehouse/gold/{analysis_type}/`
+- Writers: Python (analysis, ML pipeline) | Readers: Python (model training, reporting)
+- Content: Technical indicators, prediction features, model outputs
+- Path: `s3://locatw-{env}-stocktool-lakehouse/gold/{analysis_type}/`
 
 ## Architecture
 
@@ -95,11 +95,11 @@ DuckDB serves as the shared analytical engine. Both Go and Python access the sam
           - Notifications
 ```
 
-**Catalog:** Filesystem-based (Iceberg metadata JSON on Ceph). PostgreSQL: application state only.
+Catalog: Filesystem-based (Iceberg metadata JSON on Ceph). PostgreSQL: application state only.
 
-**Characteristics:** Minimal components (DuckDB only, no catalog server), Iceberg time travel, Parquet columnar efficiency, fully local.
+Characteristics: Minimal components (DuckDB only, no catalog server), Iceberg time travel, Parquet columnar efficiency, fully local.
 
-**Limitations:** Filesystem catalog limits concurrent writes; DuckDB Iceberg DML lacks UPDATE/DELETE on partitioned tables; go-duckdb requires CGo.
+Limitations: Filesystem catalog limits concurrent writes; DuckDB Iceberg DML lacks UPDATE/DELETE on partitioned tables; go-duckdb requires CGo.
 
 ### Phase 2: + Apache Polaris Catalog
 
@@ -124,9 +124,9 @@ Adds Apache Polaris as an Iceberg REST Catalog server, deployed on k8s. This res
           - Notifications                   - ML + MLflow
 ```
 
-**What Polaris adds:** Centralized table registry (single metadata source of truth), safe concurrent access (Go CronJobs + Python don't conflict), REST Catalog protocol (DuckDB, PyIceberg, Spark, Trino, Flink), PostgreSQL backend (reuses existing instance).
+What Polaris adds: Centralized table registry (single metadata source of truth), safe concurrent access (Go CronJobs + Python don't conflict), REST Catalog protocol (DuckDB, PyIceberg, Spark, Trino, Flink), PostgreSQL backend (reuses existing instance).
 
-**k8s deployment additions:**
+k8s deployment additions:
 
 ```yaml
 # Polaris catalog server
@@ -144,9 +144,9 @@ mlflow:
   image: ghcr.io/mlflow/mlflow
 ```
 
-**Characteristics:** All Phase 1 benefits + safe multi-process access, unified k8s management, engine extensibility (add Spark/Trino later).
+Characteristics: All Phase 1 benefits + safe multi-process access, unified k8s management, engine extensibility (add Spark/Trino later).
 
-**Limitations:** Polaris is JVM-based (higher memory), additional k8s manifests, more complex setup.
+Limitations: Polaris is JVM-based (higher memory), additional k8s manifests, more complex setup.
 
 ## Phased Adoption
 

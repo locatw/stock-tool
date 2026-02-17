@@ -9,8 +9,8 @@ The local environment is established in two phases:
 
 | Phase | Approach | Purpose |
 |---|---|---|
-| **Phase 1** | Docker Compose | Lightweight local environment using existing tooling |
-| **Phase 2** | Kind + Kustomize | Local k8s cluster mirroring production topology |
+| Phase 1 | Docker Compose | Lightweight local environment using existing tooling |
+| Phase 2 | Kind + Kustomize | Local k8s cluster mirroring production topology |
 
 ## Repository Strategy
 
@@ -18,8 +18,8 @@ The local environment is established in two phases:
 
 Following ArgoCD best practices, source code and Kubernetes manifests are maintained in separate repositories:
 
-- **Application repository** (`stock-tool`) — source code, Dockerfiles, CI pipelines
-- **Infrastructure repository** — all Kubernetes manifests, ArgoCD configuration, platform services
+- Application repository (`stock-tool`) — source code, Dockerfiles, CI pipelines
+- Infrastructure repository — all Kubernetes manifests, ArgoCD configuration, platform services
 
 Rationale: independent release cycles (app changes don't trigger GitOps until manifest update), clean audit trail (infra Git history = deployment changes only), separate access control.
 
@@ -69,8 +69,8 @@ Namespaces are organized by functional area:
 
 ArgoCD manages deployments using a combination of App-of-Apps and ApplicationSet patterns:
 
-- **App-of-Apps** — a root Application that manages other Application definitions in `clusters/{env}/`
-- **ApplicationSet** — generates Application resources dynamically based on directory structure or Git repository contents
+- App-of-Apps — a root Application that manages other Application definitions in `clusters/{env}/`
+- ApplicationSet — generates Application resources dynamically based on directory structure or Git repository contents
 
 ## Local Development Environment
 
@@ -78,7 +78,7 @@ ArgoCD manages deployments using a combination of App-of-Apps and ApplicationSet
 
 Infrastructure in containers, application on host. Extends existing `compose.yaml`.
 
-**Architecture:**
+Architecture:
 
 ```text
 ┌─────────────────────────────────────────────┐
@@ -96,7 +96,7 @@ Infrastructure in containers, application on host. Extends existing `compose.yam
   - go run / go test      - marimo / pytest
 ```
 
-**Principles:**
+Principles:
 
 - `compose.yaml` runs PostgreSQL, SeaweedFS, etc.; Go/Python execute natively for fast iteration
 - Compose profiles group services by function (`docker compose --profile lakehouse up`)
@@ -107,7 +107,7 @@ Infrastructure in containers, application on host. Extends existing `compose.yam
 
 Transitions to Kind with Kustomize overlays once the production k8s cluster is operational.
 
-**Architecture:**
+Architecture:
 
 ```text
 ┌──────────────────────────────────────────────┐
@@ -126,9 +126,9 @@ Transitions to Kind with Kustomize overlays once the production k8s cluster is o
 └──────────────────────────────────────────────┘
 ```
 
-**Overlay strategy:** Local overlays live alongside production overlays in the infrastructure repository. Rationale: single repo for all environments ensures consistency; base changes reflect in all overlays immediately.
+Overlay strategy: Local overlays live alongside production overlays in the infrastructure repository. Rationale: single repo for all environments ensures consistency; base changes reflect in all overlays immediately.
 
-**Local overlay patches:**
+Local overlay patches:
 
 | Production | Local override |
 |---|---|
@@ -137,7 +137,7 @@ Transitions to Kind with Kustomize overlays once the production k8s cluster is o
 | External ingress | NodePort or port-forward |
 | Replicas for HA | Single replica |
 
-**Image loading:** `kind load docker-image stock-tool:latest --name stock-tool`
+Image loading: `kind load docker-image stock-tool:latest --name stock-tool`
 
 ## Phased Adoption
 
