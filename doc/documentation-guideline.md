@@ -24,9 +24,7 @@ For guideline and rule documents, also include:
 
 ## Principle: Top-Down Ordering
 
-Organize sections within a document from broad to narrow. Start with high-level concepts, design policies, or overviews, then progress into implementation details and configuration references.
-
-Readers go through a document from top to bottom. Presenting the big picture first gives them the context needed to understand the details that follow.
+Organize sections from broad to narrow: high-level concepts and design policies first, then implementation details and configuration references. Rationale: readers progress top-to-bottom, so the big picture first provides context for the details that follow.
 
 ## Principle: Avoid Easily Outdated Content
 
@@ -46,11 +44,7 @@ Content that changes with routine development (adding a command, creating a new 
 - Commands and workflows: How to run, build, test
 - Configuration file references: Which config files control what behavior (e.g., "`compose.yaml` for local infrastructure configuration")
 
-### Rationale
-
-Documentation that enumerates current contents creates a maintenance burden — every routine change (adding a command, creating a new endpoint, etc.) requires a documentation update.
-Readers can discover current contents by looking at the filesystem.
-Documentation should focus on what cannot be inferred from the code itself.
+Rationale: enumerated contents create a maintenance burden — every routine change requires a documentation update. Readers can discover current contents from the filesystem; documentation should focus on what cannot be inferred from the code.
 
 ## Principle: Token-Efficient Writing
 
@@ -68,9 +62,10 @@ information density:
 
 ## Principle: DRY (Don't Repeat Yourself)
 
-Avoid duplicating operational procedures and frequently changing values across multiple documents.
-When a procedure is documented in another file (e.g., environment setup in `doc/requirements.md`), link to it instead of restating the steps.
-When a configuration file is the source of truth for specific values (port numbers, database credentials, S3 bucket paths, etc.), point readers to the config file path instead of copying the values into prose.
+Avoid duplicating operational procedures and frequently changing values across multiple documents:
+
+- When a procedure is documented in another file (e.g., environment setup in `doc/requirements.md`), link instead of restating
+- When a configuration file is the source of truth (port numbers, credentials, S3 bucket paths, etc.), reference the config file path instead of copying values into prose
 
 ### Acceptable Duplication
 
@@ -87,8 +82,4 @@ Duplication is acceptable when it serves readability:
 - Copied lists of current values (port numbers, credentials, bucket paths) that change with routine operations — reference the config file instead
 - Restating the same design explanation at the same level of detail in multiple documents — pick one document as the primary source and summarize with a link in others
 
-### Rationale
-
-Duplicated operational content inevitably diverges when one copy is updated but the other is not.
-However, forcing readers to follow links for every piece of context harms readability.
-The goal is to balance consistency (avoid drift) with comprehension (self-contained explanations).
+Rationale: duplicated operational content inevitably diverges when one copy is updated but the other is not. However, forcing readers to follow links for every piece of context harms readability. The goal is to balance consistency (avoid drift) with comprehension (self-contained explanations).

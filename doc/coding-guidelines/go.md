@@ -125,7 +125,7 @@ if err = sqlDB.Ping(); err != nil {
 }
 ```
 
-The `:=` operator makes it clear that we're creating a new error variable in the if statement's scope.
+Rationale: `:=` makes it clear that `err` is a new variable scoped to the if block.
 
 ## 8. GORM Models
 
@@ -287,7 +287,7 @@ Usecase tests should be integration tests that use real infrastructure (DB, S3) 
 | Object storage | Real (SeaweedFS via dockertest) | Catches upload/key issues |
 | External APIs | Mock | Cannot call in tests, rate limits, costs |
 
-This catches integration bugs that pure mock tests miss (e.g., wrong column names, type conversion errors, S3 key format issues) and makes tests resilient to internal refactoring.
+Rationale: catches integration bugs that pure mock tests miss (wrong column names, type conversion errors, S3 key format issues) and makes tests resilient to internal refactoring.
 
 ## 11. Timezone Handling
 
@@ -303,4 +303,4 @@ now := time.Now().UTC()
 s3Key := extract.GenerateS3Key(source, dataType, now, ext)
 ```
 
-Each component that requires a specific timezone is responsible for converting it internally. This keeps upper layers free from infrastructure concerns and avoids redundant conversions.
+Each component that requires a specific timezone is responsible for converting it internally. Rationale: keeps upper layers free from infrastructure concerns and avoids redundant conversions.

@@ -27,11 +27,13 @@ make lint       # Run golangci-lint
 make lint-fix   # Run golangci-lint with auto-fix
 ```
 
-Linter configuration is in `backend/.golangci.yml`. golangci-lint is managed as a `go tool` dependency — no separate installation is needed.
+- Configuration: `backend/.golangci.yml`
+- Managed as a `go tool` dependency — no separate installation needed
 
 ## Testing
 
-Repository tests use `ory/dockertest` to spin up a Postgres container per test suite. The `testutil.DBTest` base suite (in `backend/internal/util/testutil/`) handles container lifecycle and migration application. Tests require a running Docker daemon.
-
+- Repository tests use `ory/dockertest` to spin up a Postgres container per test suite
+- `testutil.DBTest` base suite (`backend/internal/util/testutil/`) handles container lifecycle and migration
+- Requires a running Docker daemon
 - Test framework: `testify/suite` with `testify/assert`
 - Deep comparisons: `google/go-cmp`

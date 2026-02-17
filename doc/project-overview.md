@@ -1,9 +1,12 @@
 # Project Overview
 
-Stock-tool is an investment support application designed to assist with investment decision-making.
-It fetches investment-related data from external sources, persists it in a local data store, and provides a foundation for analyzing the stored data to inform investment decisions.
+Stock-tool is an investment support application:
 
-Currently, the platform integrates with the J-Quants API to extract Japanese stock market data (brands and daily quotes) and stores it in PostgreSQL, tracking extraction tasks and their execution history.
+- Fetches investment-related data from external sources
+- Persists data in a local data store
+- Provides a foundation for analyzing stored data to inform investment decisions
+
+Current scope: J-Quants API for Japanese stock market data (brands, daily quotes), stored in PostgreSQL with extraction task and execution history tracking.
 
 ## Entry Points
 
