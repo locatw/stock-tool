@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [doc/proposals/jquants-data-acquisition.md](doc/proposals/jquants-data-acquisition.md) — J-Quants specific data acquisition requirements and constraints
 - [doc/proposals/data-lineage-design.md](doc/proposals/data-lineage-design.md) — Data lineage design (batch-level execution records over custom data IDs)
 - [doc/requirements.md](doc/requirements.md) — Prerequisites, environment setup, `.env` configuration
-- [doc/development-guideline.md](doc/development-guideline.md) — Common commands, testing
+- [doc/development-guideline.md](doc/development-guideline.md) — Common commands, migration file creation, testing
 - [doc/documentation-guideline.md](doc/documentation-guideline.md) — Documentation policies and principles
 - [doc/coding-guidelines/go.md](doc/coding-guidelines/go.md) — Go coding conventions (formatting, GORM, repository rules)
 - [doc/coding-guidelines/markdown.md](doc/coding-guidelines/markdown.md) — Markdown formatting rules

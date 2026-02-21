@@ -12,6 +12,7 @@ cd backend && go test ./...
 cd backend && go test ./internal/infra/repository/ -run TestExtractTaskRepository/TestCreate
 
 # Database migrations
+# Always use `migrate create` to generate migration files — never create them manually.
 cd backend && go run ./cmd/cli/ migrate version
 cd backend && go run ./cmd/cli/ migrate up
 cd backend && go run ./cmd/cli/ migrate create MIGRATION_NAME
