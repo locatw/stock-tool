@@ -14,7 +14,11 @@
     "allow": [
       "Read(**)",
       "Glob(**)",
-      "Grep(**)"
+      "Grep(**)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:jpx.gitbook.io)",
+      "WebFetch(domain:jpx-jquants.com)"
     ]
   },
   "hooks": {
