@@ -9,6 +9,8 @@ cd backend && go run ./cmd/cli/ migrate up
 cd backend && go run ./cmd/cli/ migrate create MIGRATION_NAME
 ```
 
+After creating or editing migration files, run `/verify-migration` to verify that the changes apply cleanly to the local DB.
+
 ## Testing
 
 ```bash
