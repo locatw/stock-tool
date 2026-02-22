@@ -1,9 +1,9 @@
-# Data Acquisition Requirements
+# Data Ingestion Requirements
 
 ## Overview
 
-General requirements for landing-layer data acquisition, applicable to any source.
-Source-specific docs (e.g., [J-Quants](jquants-data-acquisition.md)) extend these with source-specific constraints.
+General requirements for landing-layer data ingestion, applicable to any source.
+Source-specific docs (e.g., [J-Quants](jquants-data-ingestion.md)) extend these with source-specific constraints.
 
 Current state: only brand data from J-Quants API, manual CLI, no scheduling/gap detection/per-data-type config.
 
@@ -46,7 +46,7 @@ or restructuring (see [Landing layer](data-persistence-architecture.md#landing-r
 All parsing, schema mapping, deduplication belongs to Bronze layer and later.
 Rationale: reprocessing possible without re-fetch; parsing bugs cannot cause irreversible data loss.
 
-## Acquisition Metadata
+## Ingestion Metadata
 
 Every acquired data file must have associated metadata for origin identification and quality verification.
 

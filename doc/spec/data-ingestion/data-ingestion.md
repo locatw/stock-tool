@@ -1,10 +1,10 @@
-# Data Acquisition
+# Data Ingestion
 
 ## Background
 
 stock-tool provides a foundation for investment decisions by fetching and accumulating investment-related data from external sources.
-Market data such as stock prices and brand information is updated daily, so a mechanism for continuous, gap-free acquisition is essential.
-As data sources and data types will grow over time, a general-purpose acquisition framework is needed that can absorb per-source constraints such as rate limits, update timing, and trading calendars.
+Market data such as stock prices and brand information is updated daily, so a mechanism for continuous, gap-free ingestion is essential.
+As data sources and data types will grow over time, a general-purpose ingestion framework is needed that can absorb per-source constraints such as rate limits, update timing, and trading calendars.
 
 ## Purpose
 
@@ -31,7 +31,7 @@ Example: stock price data for 2025-06-02 stores under `2025/06/02/` regardless o
 Files stored byte-for-byte in original format without transformation, filtering, or restructuring.
 Rationale: reprocessing possible without re-fetch; parsing bugs cannot cause irreversible data loss.
 
-### FR-3: Acquisition Metadata
+### FR-3: Ingestion Metadata
 
 Every acquired data file must have associated metadata for origin identification and quality verification.
 
@@ -163,7 +163,7 @@ Configuration = what/when; execution tables = what happened.
 
 ## Use Cases
 
-- [extract-data](usecase/extract-data.md) — Fetch and store one (source, data_type, target_date)
+- [ingest-data](usecase/ingest-data.md) — Fetch and store one (source, data_type, target_date)
 
 Use cases for gap detection, backfill, duplicate skip, and stale recovery are deferred.
 
@@ -176,7 +176,7 @@ Use cases for gap detection, backfill, duplicate skip, and stale recovery are de
 ## Out of Scope
 
 - Bronze/Silver/Gold layer processing -- belongs to downstream pipeline stages
-- Scheduler implementation (k8s CronJob manifests) -- infrastructure concern, separate from acquisition logic
+- Scheduler implementation (k8s CronJob manifests) -- infrastructure concern, separate from ingestion logic
 - Source-specific API details -- covered by source-specific docs (e.g., [J-Quants](data-sources/jquants.md))
 - File checksum and size tracking -- deferred; storage mechanism undecided (see [FR-3 Design Notes](#design-notes))
 - Data format explicit tracking -- deferred; currently implicit in S3 key extension

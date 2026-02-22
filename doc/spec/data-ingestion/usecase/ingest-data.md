@@ -1,4 +1,4 @@
-# Extract Data
+# Ingest Data
 
 ## Summary
 
@@ -20,6 +20,8 @@ byte-for-byte in the landing zone S3 path keyed by business date.
 | target_date | date | Yes | Business date the data represents |
 
 ## Expected Behavior
+
+<!-- Entity names below (ExtractTaskExecution, ExtractedDataS3) will be renamed to IngestTaskExecution, IngestedDataS3 during re-implementation -->
 
 1. Check for non-stale in-progress execution for (source, data_type, target_date); skip if found
 2. Create ExtractTaskExecution with status=in_progress and target_date_time=target_date
@@ -59,6 +61,7 @@ byte-for-byte in the landing zone S3 path keyed by business date.
 
 ## Related Code
 
+<!-- Paths below reflect the current codebase; will be renamed during re-implementation (domain/extract/ → domain/ingest/, usecase/task/extract.go → usecase/task/ingest.go) -->
 - Domain: `backend/internal/domain/extract/`
 - Use case: `backend/internal/usecase/task/`
 - Repository: `backend/internal/infra/repository/`

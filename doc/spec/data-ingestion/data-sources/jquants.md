@@ -1,6 +1,6 @@
 # J-Quants
 
-Source profile extending [data-acquisition.md](../data-acquisition.md) with J-Quants-specific constraints. API base: `https://api.jquants.com/v1`. Authoritative reference for update times: [J-Quants data update page](https://jpx.gitbook.io/j-quants-ja/outline/data-update).
+Source profile extending [data-ingestion.md](../data-ingestion.md) with J-Quants-specific constraints. API base: `https://api.jquants.com/v1`. Authoritative reference for update times: [J-Quants data update page](https://jpx.gitbook.io/j-quants-ja/outline/data-update).
 
 ## Source-Level Configuration
 

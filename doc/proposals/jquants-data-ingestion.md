@@ -1,8 +1,8 @@
-# J-Quants Data Acquisition
+# J-Quants Data Ingestion
 
 ## Overview
 
-J-Quants-specific requirements extending the general framework in [data-acquisition-requirements.md](data-acquisition-requirements.md). API base: `https://api.jquants.com/v1`.
+J-Quants-specific requirements extending the general framework in [data-ingestion-requirements.md](data-ingestion-requirements.md). API base: `https://api.jquants.com/v1`.
 
 ## Data Types and Update Timing
 
@@ -73,7 +73,7 @@ Gap detection requires TSE business days (excludes weekends and Japanese holiday
 
 ## J-Quants Configuration Items
 
-Maps to [general configuration framework](data-acquisition-requirements.md#extensible-per-data-source-configuration).
+Maps to [general configuration framework](data-ingestion-requirements.md#extensible-per-data-source-configuration).
 
 ### Source-Level Settings
 

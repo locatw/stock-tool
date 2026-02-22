@@ -42,7 +42,7 @@ What problem this feature solves.
 
   Example — structured requirement subsection:
 
-  ### FR-3: Acquisition Metadata
+  ### FR-3: Ingestion Metadata
 
   Every acquired file must have associated metadata.
 
