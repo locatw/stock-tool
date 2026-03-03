@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Stock Tool API</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link
+      href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #0d1117;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="redoc-container"></div>
+    <script src="/redoc.standalone.js"></script>
+    <script>
+      Redoc.init('/spec/openapi.yaml', {
+        theme: {
+          colors: {
+            primary: { main: '#58a6ff' },
+            text: { primary: '#e6edf3', secondary: 'rgba(230,237,243,0.7)' },
+            http: {
+              get: '#3fb950',
+              post: '#58a6ff',
+              put: '#d29922',
+              delete: '#f85149',
+            },
+          },
+          schema: {
+            nestedBackground: '#161b22',
+          },
+          sidebar: {
+            backgroundColor: '#161b22',
+            textColor: '#e6edf3',
+          },
+          rightPanel: {
+            backgroundColor: '#1c2128',
+            textColor: '#e6edf3',
+          },
+          codeBlock: {
+            backgroundColor: '#0d1117',
+          },
+          typography: {
+            fontFamily: 'Roboto, sans-serif',
+          },
+        },
+      }, document.getElementById('redoc-container'));
+    </script>
+  </body>
+</html>

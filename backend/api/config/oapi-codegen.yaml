@@ -1,0 +1,8 @@
+package: api
+output: ../gen/generated.go
+generate:
+  - echo-server
+  - models
+  - embedded-spec
+  - strict-server
+  - skip-prune

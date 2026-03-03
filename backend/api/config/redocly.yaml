@@ -1,0 +1,9 @@
+apis:
+  main:
+    root: ../definition/openapi.yaml
+
+extends:
+  - recommended
+
+rules:
+  no-server-example.com: off
