@@ -1,0 +1,68 @@
+get:
+  operationId: getDataSource
+  summary: Get a data source by ID
+  parameters:
+    - $ref: '../parameters/DataSourceID.yaml'
+  responses:
+    "200":
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/DataSource.yaml'
+    "404":
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/ErrorResponse.yaml'
+put:
+  operationId: updateDataSource
+  summary: Update a data source
+  parameters:
+    - $ref: '../parameters/DataSourceID.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../schemas/UpdateDataSourceRequest.yaml'
+  responses:
+    "200":
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/DataSource.yaml'
+    "400":
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/ErrorResponse.yaml'
+    "404":
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/ErrorResponse.yaml'
+    "422":
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/ErrorResponse.yaml'
+delete:
+  operationId: deleteDataSource
+  summary: Delete a data source
+  parameters:
+    - $ref: '../parameters/DataSourceID.yaml'
+  responses:
+    "204":
+      description: Deleted
+    "404":
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/ErrorResponse.yaml'

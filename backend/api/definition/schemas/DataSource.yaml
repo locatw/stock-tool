@@ -1,0 +1,28 @@
+type: object
+required:
+  - id
+  - name
+  - enabled
+  - timezone
+  - settings
+  - createdAt
+  - updatedAt
+properties:
+  id:
+    type: string
+    format: uuid
+  name:
+    type: string
+  enabled:
+    type: boolean
+  timezone:
+    type: string
+  settings:
+    type: object
+    additionalProperties: true
+  createdAt:
+    type: string
+    format: date-time
+  updatedAt:
+    type: string
+    format: date-time

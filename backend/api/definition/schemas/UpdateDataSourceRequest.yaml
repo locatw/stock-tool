@@ -1,0 +1,18 @@
+type: object
+required:
+  - name
+  - enabled
+  - timezone
+  - settings
+properties:
+  name:
+    type: string
+    minLength: 1
+  enabled:
+    type: boolean
+  timezone:
+    type: string
+    minLength: 1
+  settings:
+    type: object
+    additionalProperties: true

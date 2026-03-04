@@ -10,4 +10,20 @@ servers:
     description: Local development server
 security: []
 paths:
+  /api/v1/data-sources:
+    $ref: './paths/data-sources.yaml'
+  /api/v1/data-sources/{id}:
+    $ref: './paths/data-source.yaml'
 components:
+  parameters:
+    DataSourceID:
+      $ref: './parameters/DataSourceID.yaml'
+  schemas:
+    DataSource:
+      $ref: './schemas/DataSource.yaml'
+    ErrorResponse:
+      $ref: './schemas/ErrorResponse.yaml'
+    CreateDataSourceRequest:
+      $ref: './schemas/CreateDataSourceRequest.yaml'
+    UpdateDataSourceRequest:
+      $ref: './schemas/UpdateDataSourceRequest.yaml'
