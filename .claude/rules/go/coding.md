@@ -5,7 +5,7 @@ paths:
 
 # Go Coding Rules
 
-IMPORTANT: Before writing or modifying Go code, you MUST read `doc/coding-guidelines/go.md` and follow all rules defined there.
+IMPORTANT: Before writing or modifying Go code, you MUST read `doc/coding-guidelines/go/coding.md` and follow all rules defined there.
 
 The most critical rules (always follow even without reading the full document):
 

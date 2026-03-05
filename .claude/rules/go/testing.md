@@ -5,7 +5,7 @@ paths:
 
 # Go Testing Rules
 
-IMPORTANT: Before writing or modifying Go test code, you MUST read the testing sections (10, 11) of `doc/coding-guidelines/go.md`.
+IMPORTANT: Before writing or modifying Go test code, you MUST read `doc/coding-guidelines/go/testing.md` and follow all rules defined there.
 
 Key rules:
 - Use `testify/suite` for test organization
