@@ -3,6 +3,8 @@ package testutil
 import (
 	"database/sql"
 	"fmt"
+	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -14,9 +16,10 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-const (
-	testMigrationDir = "../../../migrations"
-)
+func migrationDir() string {
+	_, filename, _, _ := runtime.Caller(0)
+	return filepath.Join(filepath.Dir(filename), "../../../migrations")
+}
 
 type DBTest struct {
 	suite.Suite
@@ -115,7 +118,7 @@ func (s *DBTest) ApplyMigrations() {
 	})
 	s.Require().NoError(err)
 
-	mig, err := migrate.NewWithDatabaseInstance("file://"+testMigrationDir, "postgres", driver)
+	mig, err := migrate.NewWithDatabaseInstance("file://"+migrationDir(), "postgres", driver)
 	s.Require().NoError(err)
 
 	s.Require().NoError(mig.Up())
@@ -129,7 +132,7 @@ func (s *DBTest) CleanupMigrations() error {
 	})
 	s.Require().NoError(err)
 
-	mig, err := migrate.NewWithDatabaseInstance("file://"+testMigrationDir, "postgres", driver)
+	mig, err := migrate.NewWithDatabaseInstance("file://"+migrationDir(), "postgres", driver)
 	s.Require().NoError(err)
 
 	s.Require().NoError(mig.Down())
