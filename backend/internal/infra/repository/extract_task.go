@@ -181,10 +181,7 @@ func (r *ExtractTaskRepository) CreateExecution(
 	return dbExec.ToEntity(), nil
 }
 
-func (r *ExtractTaskRepository) UpdateExecution(
-	ctx context.Context,
-	exec *extract.ExtractTaskExecution,
-) error {
+func (r *ExtractTaskRepository) UpdateExecution(ctx context.Context, exec *extract.ExtractTaskExecution) error {
 	dbExec := toExtractTaskExecution(exec)
 	return r.db.WithContext(ctx).
 		Model(&ExtractTaskExecution{}).
@@ -210,10 +207,7 @@ func (r *ExtractTaskRepository) CreateExtractedDataS3(
 	return dbS3.ToEntity(), nil
 }
 
-func (r *ExtractTaskRepository) Transaction(
-	ctx context.Context,
-	f func(tx *ExtractTaskRepository) error,
-) error {
+func (r *ExtractTaskRepository) Transaction(ctx context.Context, f func(tx *ExtractTaskRepository) error) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		return f(&ExtractTaskRepository{db: tx})
 	})

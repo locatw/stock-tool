@@ -27,11 +27,7 @@ type BrandDataFetcherMock struct {
 	mock.Mock
 }
 
-func (m *BrandDataFetcherMock) FetchBrands(
-	ctx context.Context,
-	code *string,
-	date *time.Time,
-) ([]byte, error) {
+func (m *BrandDataFetcherMock) FetchBrands(ctx context.Context, code *string, date *time.Time) ([]byte, error) {
 	args := m.Called(ctx, code, date)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -87,9 +83,7 @@ func (s *ExtractTaskUseCaseTestSuite) TearDownTest() {
 	s.Require().NoError(s.CleanupMigrations())
 }
 
-func (s *ExtractTaskUseCaseTestSuite) newUseCase(
-	fetcher BrandDataFetcher,
-) *ExtractTaskUseCase {
+func (s *ExtractTaskUseCaseTestSuite) newUseCase(fetcher BrandDataFetcher) *ExtractTaskUseCase {
 	return NewExtractTaskUseCase(fetcher, s.s3Client, s.repo)
 }
 

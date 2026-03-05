@@ -12,7 +12,8 @@ The most critical rules (always follow even without reading the full document):
 - Use `samber/lo` for slice transformations (map, filter); keep standard for loops only for DB operations
 - Return function results directly — do not store in a variable just to return it
 - Use `:=` (not `=`) in single-line `if err` checks to scope the variable
-- Line length max 120 columns; break multi-param signatures across lines
+- Line length max 120 columns; if the full signature (up to `{`) fits on one line keep it there, otherwise break each parameter onto its own line
+- Anonymous functions: write on one line if the whole expression fits within 120 columns; otherwise expand normally
 - When a struct literal or function call spans multiple lines, each element on its own line
 - Delete comments that merely restate the type name or constructor purpose
 - Do not define interfaces in the repository package — let consumers define them

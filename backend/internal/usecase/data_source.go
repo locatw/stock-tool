@@ -72,10 +72,7 @@ func NewDataSourceUseCase(repo DataSourceRepository) *DataSourceUseCase {
 	return &DataSourceUseCase{repo: repo}
 }
 
-func (uc *DataSourceUseCase) Create(
-	ctx context.Context,
-	req *CreateDataSourceRequest,
-) (*DataSourceResponse, error) {
+func (uc *DataSourceUseCase) Create(ctx context.Context, req *CreateDataSourceRequest) (*DataSourceResponse, error) {
 	ds, err := ingestion.NewDataSource(req.Name, req.Enabled, req.Timezone, req.Settings)
 	if err != nil {
 		return nil, &ValidationError{Message: err.Error()}
@@ -87,10 +84,7 @@ func (uc *DataSourceUseCase) Create(
 	return newDataSourceResponse(created), nil
 }
 
-func (uc *DataSourceUseCase) Get(
-	ctx context.Context,
-	id uuid.UUID,
-) (*DataSourceResponse, error) {
+func (uc *DataSourceUseCase) Get(ctx context.Context, id uuid.UUID) (*DataSourceResponse, error) {
 	found, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find data source: %w", err)
@@ -101,9 +95,7 @@ func (uc *DataSourceUseCase) Get(
 	return newDataSourceResponse(found), nil
 }
 
-func (uc *DataSourceUseCase) List(
-	ctx context.Context,
-) ([]*DataSourceResponse, error) {
+func (uc *DataSourceUseCase) List(ctx context.Context) ([]*DataSourceResponse, error) {
 	sources, err := uc.repo.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list data sources: %w", err)
@@ -113,10 +105,7 @@ func (uc *DataSourceUseCase) List(
 	}), nil
 }
 
-func (uc *DataSourceUseCase) Update(
-	ctx context.Context,
-	req *UpdateDataSourceRequest,
-) (*DataSourceResponse, error) {
+func (uc *DataSourceUseCase) Update(ctx context.Context, req *UpdateDataSourceRequest) (*DataSourceResponse, error) {
 	existing, err := uc.repo.FindByID(ctx, req.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find data source: %w", err)

@@ -14,11 +14,7 @@ func NewBrandFetcher(client *Client) *BrandFetcher {
 	return &BrandFetcher{client: client}
 }
 
-func (f *BrandFetcher) FetchBrands(
-	ctx context.Context,
-	code *string,
-	date *time.Time,
-) ([]byte, error) {
+func (f *BrandFetcher) FetchBrands(ctx context.Context, code *string, date *time.Time) ([]byte, error) {
 	if !f.client.IsAuthorized() {
 		if err := f.client.Login(); err != nil {
 			return nil, fmt.Errorf("failed to login: %w", err)

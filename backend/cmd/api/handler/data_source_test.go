@@ -29,10 +29,7 @@ func (m *DataSourceUseCaseMock) Create(
 	return args.Get(0).(*usecase.DataSourceResponse), args.Error(1)
 }
 
-func (m *DataSourceUseCaseMock) Get(
-	ctx context.Context,
-	id uuid.UUID,
-) (*usecase.DataSourceResponse, error) {
+func (m *DataSourceUseCaseMock) Get(ctx context.Context, id uuid.UUID) (*usecase.DataSourceResponse, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -40,9 +37,7 @@ func (m *DataSourceUseCaseMock) Get(
 	return args.Get(0).(*usecase.DataSourceResponse), args.Error(1)
 }
 
-func (m *DataSourceUseCaseMock) List(
-	ctx context.Context,
-) ([]*usecase.DataSourceResponse, error) {
+func (m *DataSourceUseCaseMock) List(ctx context.Context) ([]*usecase.DataSourceResponse, error) {
 	args := m.Called(ctx)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)

@@ -586,9 +586,7 @@ func (c *Client) Login() error {
 	return err
 }
 
-func (c *Client) ListBrands(
-	request ListBrandRequest,
-) (*Response[ListBrandResponseBody], error) {
+func (c *Client) ListBrands(request ListBrandRequest) (*Response[ListBrandResponseBody], error) {
 	if !c.IsAuthorized() {
 		return nil, ErrNotAuthorized
 	}
@@ -598,9 +596,7 @@ func (c *Client) ListBrands(
 	})
 }
 
-func (c *Client) GetDailyQuotes(
-	request GetDailyQuoteRequest,
-) (*Response[GetDailyQuoteResponseBody], error) {
+func (c *Client) GetDailyQuotes(request GetDailyQuoteRequest) (*Response[GetDailyQuoteResponseBody], error) {
 	if !c.IsAuthorized() {
 		return nil, ErrNotAuthorized
 	}
@@ -647,10 +643,7 @@ func (c *Client) refreshToken() (*Response[RefreshTokenResponseBody], error) {
 
 // withRefreshToken wraps an API call with automatic token refresh on 401 responses.
 // Since the response type is generic, this is a package-level function.
-func withRefreshToken[T any](
-	c *Client,
-	requestFunc func() (*Response[T], error),
-) (*Response[T], error) {
+func withRefreshToken[T any](c *Client, requestFunc func() (*Response[T], error)) (*Response[T], error) {
 	for {
 		resp, err := requestFunc()
 		if err != nil {

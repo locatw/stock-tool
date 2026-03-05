@@ -55,10 +55,7 @@ func NewExtractTaskUseCase(
 	}
 }
 
-func (uc *ExtractTaskUseCase) Extract(
-	ctx context.Context,
-	req *ExtractTaskRequest,
-) (*ExtractTaskResponse, error) {
+func (uc *ExtractTaskUseCase) Extract(ctx context.Context, req *ExtractTaskRequest) (*ExtractTaskResponse, error) {
 	// 1. Find-or-create the ExtractTask
 	task, err := uc.findOrCreateTask(ctx, req.Source, req.DataType, req.Timing)
 	if err != nil {
@@ -147,10 +144,7 @@ func (uc *ExtractTaskUseCase) findOrCreateTask(
 	return task, nil
 }
 
-func (uc *ExtractTaskUseCase) fetchRawData(
-	ctx context.Context,
-	req *ExtractTaskRequest,
-) ([]byte, error) {
+func (uc *ExtractTaskUseCase) fetchRawData(ctx context.Context, req *ExtractTaskRequest) ([]byte, error) {
 	switch req.Source {
 	case "jquants":
 		switch req.DataType {

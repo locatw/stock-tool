@@ -14,10 +14,7 @@ type DataSourceUseCase interface {
 	Create(ctx context.Context, req *usecase.CreateDataSourceRequest) (*usecase.DataSourceResponse, error)
 	Get(ctx context.Context, id uuid.UUID) (*usecase.DataSourceResponse, error)
 	List(ctx context.Context) ([]*usecase.DataSourceResponse, error)
-	Update(
-		ctx context.Context,
-		req *usecase.UpdateDataSourceRequest,
-	) (*usecase.DataSourceResponse, error)
+	Update(ctx context.Context, req *usecase.UpdateDataSourceRequest) (*usecase.DataSourceResponse, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 

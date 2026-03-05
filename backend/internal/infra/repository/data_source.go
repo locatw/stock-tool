@@ -56,10 +56,7 @@ func NewDataSourceRepository(db *gorm.DB) *DataSourceRepository {
 	return &DataSourceRepository{db: db}
 }
 
-func (r *DataSourceRepository) Create(
-	ctx context.Context,
-	src *ingestion.DataSource,
-) (*ingestion.DataSource, error) {
+func (r *DataSourceRepository) Create(ctx context.Context, src *ingestion.DataSource) (*ingestion.DataSource, error) {
 	dbModel := toDataSourceDBModel(src)
 	if err := r.db.WithContext(ctx).Create(dbModel).Error; err != nil {
 		return nil, err
@@ -67,10 +64,7 @@ func (r *DataSourceRepository) Create(
 	return dbModel.toEntity(), nil
 }
 
-func (r *DataSourceRepository) FindByID(
-	ctx context.Context,
-	id uuid.UUID,
-) (*ingestion.DataSource, error) {
+func (r *DataSourceRepository) FindByID(ctx context.Context, id uuid.UUID) (*ingestion.DataSource, error) {
 	var dbSource DataSource
 	err := r.db.WithContext(ctx).First(&dbSource, "id = ?", id).Error
 	if err != nil {
@@ -82,10 +76,7 @@ func (r *DataSourceRepository) FindByID(
 	return dbSource.toEntity(), nil
 }
 
-func (r *DataSourceRepository) FindByName(
-	ctx context.Context,
-	name string,
-) (*ingestion.DataSource, error) {
+func (r *DataSourceRepository) FindByName(ctx context.Context, name string) (*ingestion.DataSource, error) {
 	var dbSource DataSource
 	err := r.db.WithContext(ctx).Where("name = ?", name).First(&dbSource).Error
 	if err != nil {
@@ -97,22 +88,15 @@ func (r *DataSourceRepository) FindByName(
 	return dbSource.toEntity(), nil
 }
 
-func (r *DataSourceRepository) List(
-	ctx context.Context,
-) ([]*ingestion.DataSource, error) {
+func (r *DataSourceRepository) List(ctx context.Context) ([]*ingestion.DataSource, error) {
 	var dbSources []DataSource
 	if err := r.db.WithContext(ctx).Find(&dbSources).Error; err != nil {
 		return nil, err
 	}
-	return lo.Map(dbSources, func(s DataSource, _ int) *ingestion.DataSource {
-		return s.toEntity()
-	}), nil
+	return lo.Map(dbSources, func(s DataSource, _ int) *ingestion.DataSource { return s.toEntity() }), nil
 }
 
-func (r *DataSourceRepository) Update(
-	ctx context.Context,
-	src *ingestion.DataSource,
-) error {
+func (r *DataSourceRepository) Update(ctx context.Context, src *ingestion.DataSource) error {
 	return r.db.WithContext(ctx).
 		Model(&DataSource{}).
 		Where("id = ?", src.ID()).

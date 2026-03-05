@@ -71,6 +71,32 @@ for _, file := range files {
   // Bad
   func (r *ExtractTaskRepository) Create(ctx context.Context, task *ExtractTask, files []*ExtractedDataFile, s3Files []*ExtractedDataS3) error {
   ```
+- If the full function or method signature (including the opening `{`) fits within 120 columns, write it on one line:
+  ```go
+  // Good — fits in 120 cols, keep on one line
+  func (r *Repository) Find(ctx context.Context, id int) (*Entity, error) {
+
+  // Bad — fits in 120 cols but unnecessarily broken
+  func (r *Repository) Find(
+      ctx context.Context,
+      id int,
+  ) (*Entity, error) {
+  ```
+- Anonymous functions: if the entire anonymous function fits within 120 columns on the same line as its surrounding expression, write it on one line:
+  ```go
+  // Good
+  lo.Map(items, func(item *Item, _ int) *domain.Item { return item.ToEntity() })
+
+  // Bad — fits on one line but unnecessarily expanded
+  lo.Map(items, func(item *Item, _ int) *domain.Item {
+      return item.ToEntity()
+  })
+
+  // When it doesn't fit, expand normally
+  lo.Map(items, func(item *VeryLongTypeName, _ int) *domain.VeryLongEntityName {
+      return item.ToEntity()
+  })
+  ```
 - When a struct literal or function call spans multiple lines, each element must occupy its own line:
   ```go
   // Good

@@ -17,12 +17,7 @@ type DataSource struct {
 	updatedAt time.Time
 }
 
-func NewDataSource(
-	name string,
-	enabled bool,
-	timezone string,
-	settings map[string]any,
-) (*DataSource, error) {
+func NewDataSource(name string, enabled bool, timezone string, settings map[string]any) (*DataSource, error) {
 	loc, err := time.LoadLocation(timezone)
 	if err != nil {
 		return nil, fmt.Errorf("invalid timezone: %s", timezone)
@@ -59,12 +54,7 @@ func NewDataSourceDirectly(
 	}
 }
 
-func (s *DataSource) Update(
-	name string,
-	enabled bool,
-	timezone string,
-	settings map[string]any,
-) error {
+func (s *DataSource) Update(name string, enabled bool, timezone string, settings map[string]any) error {
 	loc, err := time.LoadLocation(timezone)
 	if err != nil {
 		return fmt.Errorf("invalid timezone: %s", timezone)
