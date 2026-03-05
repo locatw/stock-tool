@@ -134,7 +134,7 @@ func (s *DBTest) CleanupMigrations() error {
 
 	s.Require().NoError(mig.Down())
 
-	_, err = db.Exec("DROP SCHEMA IF EXISTS stock")
+	_, err = db.Exec("DROP SCHEMA IF EXISTS stock CASCADE")
 	s.Require().NoError(err)
 
 	return nil
