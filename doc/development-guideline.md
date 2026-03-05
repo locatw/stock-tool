@@ -32,7 +32,17 @@ cd backend && go test ./internal/infra/repository/ -run TestExtractTaskRepositor
 ```bash
 make lint       # Run golangci-lint
 make lint-fix   # Run golangci-lint with auto-fix
+make lint-api   # Run Redocly lint on OpenAPI definition
 ```
 
-- Configuration: `backend/.golangci.yml`
-- Managed as a `go tool` dependency — no separate installation needed
+- Go: Configuration `backend/.golangci.yml` — managed as a `go tool` dependency, no separate installation needed
+- OpenAPI: Configuration `backend/api/config/redocly.yaml` — runs via Docker, no separate installation needed
+
+## API Docs
+
+```bash
+docker compose --profile doc up api-doc
+```
+
+- Opens at `http://localhost:8080` (change port via `API_DOC_PORT` in `.env`)
+- Definition files are served directly — reload the browser to see changes

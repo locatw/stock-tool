@@ -71,6 +71,36 @@ for _, file := range files {
   // Bad
   func (r *ExtractTaskRepository) Create(ctx context.Context, task *ExtractTask, files []*ExtractedDataFile, s3Files []*ExtractedDataS3) error {
   ```
+- When a struct literal or function call spans multiple lines, each element must occupy its own line:
+  ```go
+  // Good
+  foo := Foo{
+      FieldA: 1,
+      FieldB: 2,
+      FieldC: 3,
+  }
+
+  bar(
+      arg1,
+      arg2,
+      arg3,
+  )
+
+  foo := Foo{FieldA: 1, FieldB: 2, FieldC: 3}  // single line is fine when it fits
+
+  bar(arg1, arg2, arg3)  // single line is fine when it fits
+
+  // Bad — multiple elements on the same line in a multi-line construct
+  foo := Foo{
+      FieldA: 1, FieldB: 2,
+      FieldC: 3,
+  }
+
+  bar(
+      arg1, arg2,
+      arg3,
+  )
+  ```
 
 ## 6. Return Statements
 
@@ -277,6 +307,10 @@ func (s *FooTestSuite) TestBar() {
 
 Separate test methods are acceptable when the setup or assertions differ significantly between cases (e.g., different mock configurations in usecase tests).
 
+### Mock Naming
+
+Mock structs should use the `Mock` suffix (e.g., `UserRepositoryMock`).
+
 ### Usecase Tests
 
 Usecase tests should be integration tests that use real infrastructure (DB, S3) via `dockertest`, and only mock external third-party services (e.g., J-Quants API):
@@ -289,7 +323,70 @@ Usecase tests should be integration tests that use real infrastructure (DB, S3) 
 
 Rationale: catches integration bugs that pure mock tests miss (wrong column names, type conversion errors, S3 key format issues) and makes tests resilient to internal refactoring.
 
-## 11. Timezone Handling
+### When to Skip Tests
+
+Skip writing tests for functions or methods where **both** of the following apply:
+
+- The implementation is trivially simple (direct field assignment, no branching logic)
+- The function is exercised frequently by other tests (e.g., constructors used in integration tests, getters called in assertions)
+
+Examples of functions that do **not** need dedicated tests:
+
+- `NewXXX()` constructors that only assign arguments to fields and set timestamps
+- Getter methods that return a single private field
+
+Examples of functions that **do** need tests:
+
+- Helper methods with conversion logic (e.g., `StaleTimeout()` converting minutes to `time.Duration`)
+- Constructors with conditional logic or non-trivial defaults
+
+### Struct Comparison
+
+Use `go-cmp` (`cmp.Diff`) to compare structs in a single assertion instead of asserting individual fields. This detects missing field mappings in conversion functions and ensures no field is silently ignored.
+
+- Set all fields in the expected struct — omitting a field means accepting any value for it
+- Use `s.True(cmp.Equal(expected, actual), cmp.Diff(expected, actual))` within testify/suite tests — the diff string becomes the failure message
+
+```go
+// Good — all fields verified in one assertion; diff shown on failure
+expected := api.GetDataSource200JSONResponse{
+    Id: id1, Name: "src", Enabled: true, Timezone: "UTC",
+    Settings: map[string]any{}, CreatedAt: now, UpdatedAt: now,
+}
+actual := resp.(api.GetDataSource200JSONResponse)
+s.True(cmp.Equal(expected, actual), cmp.Diff(expected, actual))
+
+// Bad — individual field checks miss omitted fields
+s.Equal("src", resp.Name)
+s.Equal(true, resp.Enabled)
+```
+
+When `cmp.Option` values are needed (e.g. `cmpopts.IgnoreFields`), pass them to both calls:
+
+```go
+opts := []cmp.Option{cmpopts.IgnoreFields(Foo{}, "UpdatedAt")}
+s.True(cmp.Equal(expected, actual, opts...), cmp.Diff(expected, actual, opts...))
+```
+
+## 11. Handler Tests
+
+Handler tests use `testify/mock` to mock the usecase layer. The primary goal is to verify that the handler correctly converts API request objects into usecase request objects and maps usecase responses back to API response objects.
+
+- `context.Context` is passed through unchanged, so use `mock.Anything` for it
+- All other arguments must use specific expected values, not `mock.Anything`, to verify conversion logic
+
+```go
+// Good — specific expected request verifies handler→usecase conversion
+expectedReq := &usecase.CreateDataSourceRequest{
+    Name: "src", Enabled: true, Timezone: "UTC", Settings: map[string]any{},
+}
+s.ucMock.On("Create", mock.Anything, expectedReq).Return(...)
+
+// Bad — mock.Anything hides mapping bugs (e.g. ID not set, wrong field)
+s.ucMock.On("Create", mock.Anything, mock.Anything).Return(...)
+```
+
+## 12. Timezone Handling
 
 Perform timezone conversions only at the boundary where they are required (e.g., S3 key generation, database persistence), not in upper layers such as usecases:
 

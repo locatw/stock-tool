@@ -14,6 +14,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [doc/requirements.md](doc/requirements.md) — Prerequisites, environment setup, `.env` configuration
 - [doc/development-guideline.md](doc/development-guideline.md) — Common commands, migration file creation, testing
 - [doc/documentation-guideline.md](doc/documentation-guideline.md) — Documentation policies and principles
-- [doc/coding-guidelines/go.md](doc/coding-guidelines/go.md) — Go coding conventions (formatting, GORM, repository rules)
+- [doc/coding-guidelines/go.md](doc/coding-guidelines/go.md) — Go coding conventions (when updating, also sync .claude/rules/go-coding.md and go-testing.md)
 - [doc/coding-guidelines/markdown.md](doc/coding-guidelines/markdown.md) — Markdown formatting rules
 - [doc/spec/](doc/spec/) — Specifications with use case scenarios
