@@ -23,18 +23,6 @@
     ]
   },
   "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-go-conventions.sh",
-            "timeout": 60
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "hooks": [
@@ -42,6 +30,26 @@
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/lint-go.sh",
             "timeout": 120
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-go-conventions.sh",
+            "timeout": 180
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/lint-api.sh",
+            "timeout": 120
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/gen-api.sh",
+            "timeout": 120
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-markdown-conventions.sh",
+            "timeout": 180
           }
         ]
       }

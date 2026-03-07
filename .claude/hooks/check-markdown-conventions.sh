@@ -1,55 +1,28 @@
 #!/bin/bash
 set -euo pipefail
 
-# Get changed .go files under backend/
-CHANGED_FILES=$(git diff --name-only HEAD -- 'backend/*.go' 'backend/**/*.go' 2>/dev/null || true)
+CHANGED_FILES=$(git diff --name-only HEAD -- '*.md' '**/*.md' 2>/dev/null || true)
 
-# Skip if no Go files changed
 [[ -z "$CHANGED_FILES" ]] && exit 0
 
 cd "$CLAUDE_PROJECT_DIR"
 
 BATCH_SIZE=5
-CODING_GUIDELINES=$(cat doc/coding-guidelines/go/coding.md)
-TESTING_GUIDELINES=$(cat doc/coding-guidelines/go/testing.md)
-
-# Split changed files into an array
+GUIDELINES=$(cat doc/coding-guidelines/markdown/style.md)
 mapfile -t FILES_ARRAY <<< "$CHANGED_FILES"
 TOTAL=${#FILES_ARRAY[@]}
-
 ERRORS=""
 
-# Process files in batches
 for (( i=0; i<TOTAL; i+=BATCH_SIZE )); do
   BATCH=("${FILES_ARRAY[@]:i:BATCH_SIZE}")
 
-  # Check if this batch contains test files
-  HAS_TEST_FILES=false
-  for f in "${BATCH[@]}"; do
-    if [[ "$f" == *_test.go ]]; then
-      HAS_TEST_FILES=true
-      break
-    fi
-  done
+  PROMPT="You are a Markdown reviewer. Check the following files against the style guidelines below.
 
-  # Build prompt for this batch
-  PROMPT="You are a Go code reviewer. Check the following files against the coding guidelines below.
+=== STYLE GUIDELINES ===
+$GUIDELINES
 
-=== CODING GUIDELINES ===
-$CODING_GUIDELINES
-"
-
-  if [[ "$HAS_TEST_FILES" == true ]]; then
-    PROMPT+="
-=== TESTING GUIDELINES ===
-$TESTING_GUIDELINES
-"
-  fi
-
-  PROMPT+="
 === FILES TO REVIEW ===
 "
-
   for f in "${BATCH[@]}"; do
     if [[ -f "$f" ]]; then
       PROMPT+="
