@@ -302,3 +302,11 @@ s3Key := extract.GenerateS3Key(source, dataType, now, ext)
 ```
 
 Each component that requires a specific timezone is responsible for converting it internally. Rationale: keeps upper layers free from infrastructure concerns and avoids redundant conversions.
+
+## 11. YAGNI (You Aren't Gonna Need It)
+
+Do not implement functionality until it is actually needed:
+
+- Do not add repository methods that are not called by any consumer
+- Do not add domain or usecase logic "in preparation" for future requirements
+- Remove methods when all callers are gone

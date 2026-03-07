@@ -33,3 +33,7 @@ Repository:
 
 Timezone:
 - Convert only at the boundary where needed, not in upper layers
+
+YAGNI:
+- Do not add repository methods, domain logic, or usecase logic until actually needed by a consumer
+- Remove methods when all callers are gone
