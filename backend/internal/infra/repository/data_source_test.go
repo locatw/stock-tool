@@ -112,6 +112,10 @@ func (s *DataSourceRepositoryTestSuite) TestFindByID() {
 			name: "found",
 			setup: func() (uuid.UUID, *ingestion.DataSource) {
 				s.seedDataSource()
+				anotherSrc, err := ingestion.NewDataSource("another-source", false, "UTC", map[string]any{})
+				s.Require().NoError(err)
+				_, err = s.repo.Create(ctx, anotherSrc)
+				s.Require().NoError(err)
 				found, err := s.repo.FindByName(ctx, "j-quants")
 				s.Require().NoError(err)
 				s.Require().NotNil(found)
@@ -145,18 +149,33 @@ func (s *DataSourceRepositoryTestSuite) TestFindByID() {
 func (s *DataSourceRepositoryTestSuite) TestFindByName() {
 	ctx := context.Background()
 	tests := []struct {
-		name    string
-		seed    bool
-		query   string
-		wantNil bool
+		name       string
+		seed       bool
+		extraSetup func()
+		query      string
+		wantNil    bool
 	}{
-		{name: "found", seed: true, query: "j-quants", wantNil: false},
+		{
+			name: "found",
+			seed: true,
+			extraSetup: func() {
+				src, err := ingestion.NewDataSource("another-source", false, "UTC", map[string]any{})
+				s.Require().NoError(err)
+				_, err = s.repo.Create(ctx, src)
+				s.Require().NoError(err)
+			},
+			query:   "j-quants",
+			wantNil: false,
+		},
 		{name: "not found", seed: false, query: "nonexistent", wantNil: true},
 	}
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
 			if tt.seed {
 				s.seedDataSource()
+			}
+			if tt.extraSetup != nil {
+				tt.extraSetup()
 			}
 			found, err := s.repo.FindByName(ctx, tt.query)
 			s.NoError(err)
@@ -225,6 +244,12 @@ func (s *DataSourceRepositoryTestSuite) TestUpdate() {
 	ctx := context.Background()
 	s.seedDataSource()
 
+	// distractor: should remain unchanged after the update
+	anotherSrc, err := ingestion.NewDataSource("another-source", false, "UTC", map[string]any{})
+	s.Require().NoError(err)
+	anotherCreated, err := s.repo.Create(ctx, anotherSrc)
+	s.Require().NoError(err)
+
 	found, err := s.repo.FindByName(ctx, "j-quants")
 	s.Require().NoError(err)
 
@@ -245,11 +270,23 @@ func (s *DataSourceRepositoryTestSuite) TestUpdate() {
 		result.UpdatedAt(),
 	)
 	s.True(cmp.Equal(*expected, *result, dataSrcCmpOpts...), cmp.Diff(*expected, *result, dataSrcCmpOpts...))
+
+	// Verify distractor was not affected
+	anotherResult, err := s.repo.FindByID(ctx, anotherCreated.ID())
+	s.Require().NoError(err)
+	s.Require().NotNil(anotherResult)
+	s.Equal("another-source", anotherResult.Name())
 }
 
 func (s *DataSourceRepositoryTestSuite) TestDelete() {
 	ctx := context.Background()
 	s.seedDataSource()
+
+	// distractor: should survive the delete
+	anotherSrc, err := ingestion.NewDataSource("another-source", false, "UTC", map[string]any{})
+	s.Require().NoError(err)
+	anotherCreated, err := s.repo.Create(ctx, anotherSrc)
+	s.Require().NoError(err)
 
 	found, err := s.repo.FindByName(ctx, "j-quants")
 	s.Require().NoError(err)
@@ -264,4 +301,10 @@ func (s *DataSourceRepositoryTestSuite) TestDelete() {
 	var count int64
 	s.Require().NoError(s.db.Model(&DataType{}).Where("data_source_id = ?", found.ID()).Count(&count).Error)
 	s.Equal(int64(0), count)
+
+	// Verify distractor still exists
+	anotherResult, err := s.repo.FindByID(ctx, anotherCreated.ID())
+	s.Require().NoError(err)
+	s.Require().NotNil(anotherResult)
+	s.Equal("another-source", anotherResult.Name())
 }

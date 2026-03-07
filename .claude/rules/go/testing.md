@@ -16,3 +16,4 @@ Key rules:
 - Usecase tests: real DB/S3 via dockertest; only mock external APIs
 - Skip tests for trivially simple functions exercised by other tests
 - Handler tests: `mock.Anything` only for `context.Context`; all other arguments must be specific values
+- Include distractor data: when testing filter/lookup/delete, create records in a different scope to prove the operation targets only the correct rows

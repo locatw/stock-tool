@@ -142,6 +142,15 @@ func (s *DataTypeUseCaseTestSuite) TestGet() {
 					Settings: map[string]any{},
 				})
 				s.Require().NoError(err)
+				_, err = s.dtUC.Create(ctx, &CreateDataTypeRequest{
+					DataSourceID:    src.ID,
+					Name:            "dt-other",
+					Enabled:         false,
+					UpdateFrequency: "weekly",
+					UpdateTimes:     []string{},
+					Settings:        map[string]any{},
+				})
+				s.Require().NoError(err)
 				dt, err := s.dtUC.Create(ctx, &CreateDataTypeRequest{
 					DataSourceID:    src.ID,
 					Name:            "dt",
@@ -252,7 +261,9 @@ func (s *DataTypeUseCaseTestSuite) TestUpdate() {
 		req         func(id uuid.UUID) *UpdateDataTypeRequest
 		expected    *DataTypeResponse
 		expectErrAs *ValidationError
+		postCheck   func()
 	}
+	var dtOtherID uuid.UUID
 	tests := []testCase{
 		{
 			name: "success",
@@ -264,6 +275,16 @@ func (s *DataTypeUseCaseTestSuite) TestUpdate() {
 					Settings: map[string]any{},
 				})
 				s.Require().NoError(err)
+				dtOther, err := s.dtUC.Create(ctx, &CreateDataTypeRequest{
+					DataSourceID:    src.ID,
+					Name:            "dt-other",
+					Enabled:         false,
+					UpdateFrequency: "weekly",
+					UpdateTimes:     []string{},
+					Settings:        map[string]any{},
+				})
+				s.Require().NoError(err)
+				dtOtherID = dtOther.ID
 				dt, err := s.dtUC.Create(ctx, &CreateDataTypeRequest{
 					DataSourceID:    src.ID,
 					Name:            "dt",
@@ -291,6 +312,12 @@ func (s *DataTypeUseCaseTestSuite) TestUpdate() {
 				UpdateFrequency: "weekly",
 				UpdateTimes:     []string{"09:00"},
 				Settings:        map[string]any{"x": "y"},
+			},
+			postCheck: func() {
+				resp, err := s.dtUC.Get(ctx, dtOtherID)
+				s.Require().NoError(err)
+				s.Require().NotNil(resp)
+				s.Equal("dt-other", resp.Name)
 			},
 		},
 		{
@@ -338,6 +365,9 @@ func (s *DataTypeUseCaseTestSuite) TestUpdate() {
 			}
 			s.Require().NotNil(resp)
 			s.True(cmp.Equal(tc.expected, resp, cmpOpts...), cmp.Diff(tc.expected, resp, cmpOpts...))
+			if tc.postCheck != nil {
+				tc.postCheck()
+			}
 		})
 	}
 }
@@ -350,6 +380,15 @@ func (s *DataTypeUseCaseTestSuite) TestDeleteDataType() {
 		Enabled:  true,
 		Timezone: "UTC",
 		Settings: map[string]any{},
+	})
+	s.Require().NoError(err)
+	dtOther, err := s.dtUC.Create(ctx, &CreateDataTypeRequest{
+		DataSourceID:    src.ID,
+		Name:            "dt-other",
+		Enabled:         false,
+		UpdateFrequency: "weekly",
+		UpdateTimes:     []string{},
+		Settings:        map[string]any{},
 	})
 	s.Require().NoError(err)
 	dt, err := s.dtUC.Create(ctx, &CreateDataTypeRequest{
@@ -368,4 +407,10 @@ func (s *DataTypeUseCaseTestSuite) TestDeleteDataType() {
 	resp, err := s.dtUC.Get(ctx, dt.ID)
 	s.NoError(err)
 	s.Nil(resp)
+
+	// Verify distractor dt-other still exists
+	otherResp, err := s.dtUC.Get(ctx, dtOther.ID)
+	s.Require().NoError(err)
+	s.Require().NotNil(otherResp)
+	s.Equal("dt-other", otherResp.Name)
 }

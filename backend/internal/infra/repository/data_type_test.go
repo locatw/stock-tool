@@ -250,6 +250,12 @@ func (s *DataTypeRepositoryTestSuite) TestUpdate() {
 		result.UpdatedAt(),
 	)
 	s.True(cmp.Equal(*expected, *result, dataTypeCmpOpts...), cmp.Diff(*expected, *result, dataTypeCmpOpts...))
+
+	// Verify distractor types[1] (listed-info) was not affected
+	distractor, err := s.repo.FindByID(ctx, types[1].ID())
+	s.Require().NoError(err)
+	s.Require().NotNil(distractor)
+	s.Equal(types[1].Name(), distractor.Name())
 }
 
 func (s *DataTypeRepositoryTestSuite) TestDelete() {
@@ -270,4 +276,10 @@ func (s *DataTypeRepositoryTestSuite) TestDelete() {
 	result, err := s.repo.FindByID(ctx, dtID)
 	s.NoError(err)
 	s.Nil(result)
+
+	// Verify distractor types[1] (listed-info) still exists
+	distractor, err := s.repo.FindByID(ctx, types[1].ID())
+	s.Require().NoError(err)
+	s.Require().NotNil(distractor)
+	s.Equal(types[1].Name(), distractor.Name())
 }

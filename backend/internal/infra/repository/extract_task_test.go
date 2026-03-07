@@ -112,6 +112,10 @@ func (s *ExtractTaskRepositoryTestSuite) TestFindBySourceAndDataType_Found() {
 	task := extract.NewExtractTask("jquants", "brand", "daily")
 	s.Require().NoError(s.repo.Create(ctx, task))
 
+	// distractor: same source/type but different timing
+	distractor := extract.NewExtractTask("jquants", "brand", "weekly")
+	s.Require().NoError(s.repo.Create(ctx, distractor))
+
 	found, err := s.repo.FindBySourceAndDataType(ctx, "jquants", "brand", "daily")
 
 	s.NoError(err)
@@ -165,6 +169,10 @@ func (s *ExtractTaskRepositoryTestSuite) TestUpdateExecution() {
 	created, err := s.repo.CreateExecution(ctx, found.ID(), exec)
 	s.Require().NoError(err)
 
+	// distractor: a second execution that should not be affected
+	exec2, err := s.repo.CreateExecution(ctx, found.ID(), extract.NewRunningExecution(targetDateTime.Add(time.Hour)))
+	s.Require().NoError(err)
+
 	// Reconstruct the entity to simulate the domain transition
 	reconstructed := extract.NewExtractTaskExecutionDirectly(
 		created.ID(),
@@ -188,6 +196,11 @@ func (s *ExtractTaskRepositoryTestSuite) TestUpdateExecution() {
 	s.Require().NoError(s.db.First(&dbExec, created.ID()).Error)
 	s.Equal("succeeded", dbExec.Status)
 	s.NotNil(dbExec.FinishedAt)
+
+	// Verify distractor exec2 was not affected
+	var dbExec2 ExtractTaskExecution
+	s.Require().NoError(s.db.First(&dbExec2, exec2.ID()).Error)
+	s.Equal("running", dbExec2.Status)
 }
 
 func (s *ExtractTaskRepositoryTestSuite) TestCreateExtractedDataS3() {

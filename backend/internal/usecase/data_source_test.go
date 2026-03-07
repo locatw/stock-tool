@@ -105,6 +105,13 @@ func (s *DataSourceUseCaseTestSuite) TestGet() {
 		{
 			name: "found",
 			setup: func() uuid.UUID {
+				_, err := s.uc.Create(ctx, &CreateDataSourceRequest{
+					Name:     "src-other",
+					Enabled:  false,
+					Timezone: "UTC",
+					Settings: map[string]any{},
+				})
+				s.Require().NoError(err)
 				created, err := s.uc.Create(ctx, &CreateDataSourceRequest{
 					Name:     "src",
 					Enabled:  true,
@@ -178,11 +185,21 @@ func (s *DataSourceUseCaseTestSuite) TestUpdate() {
 		req         func(id uuid.UUID) *UpdateDataSourceRequest
 		expected    *DataSourceResponse
 		expectErrAs *ValidationError
+		postCheck   func()
 	}
+	var srcOtherID uuid.UUID
 	tests := []testCase{
 		{
 			name: "success",
 			setup: func() uuid.UUID {
+				srcOther, err := s.uc.Create(ctx, &CreateDataSourceRequest{
+					Name:     "src-other",
+					Enabled:  false,
+					Timezone: "UTC",
+					Settings: map[string]any{},
+				})
+				s.Require().NoError(err)
+				srcOtherID = srcOther.ID
 				created, err := s.uc.Create(ctx, &CreateDataSourceRequest{
 					Name:     "src",
 					Enabled:  true,
@@ -206,6 +223,12 @@ func (s *DataSourceUseCaseTestSuite) TestUpdate() {
 				Enabled:  false,
 				Timezone: "Asia/Tokyo",
 				Settings: map[string]any{"new": "setting"},
+			},
+			postCheck: func() {
+				resp, err := s.uc.Get(ctx, srcOtherID)
+				s.Require().NoError(err)
+				s.Require().NotNil(resp)
+				s.Equal("src-other", resp.Name)
 			},
 		},
 		{
@@ -262,12 +285,23 @@ func (s *DataSourceUseCaseTestSuite) TestUpdate() {
 			}
 			s.Require().NotNil(resp)
 			s.True(cmp.Equal(tc.expected, resp, cmpOpts...), cmp.Diff(tc.expected, resp, cmpOpts...))
+			if tc.postCheck != nil {
+				tc.postCheck()
+			}
 		})
 	}
 }
 
 func (s *DataSourceUseCaseTestSuite) TestDelete() {
 	ctx := context.Background()
+
+	srcOther, err := s.uc.Create(ctx, &CreateDataSourceRequest{
+		Name:     "src-other",
+		Enabled:  false,
+		Timezone: "UTC",
+		Settings: map[string]any{},
+	})
+	s.Require().NoError(err)
 
 	created, err := s.uc.Create(ctx, &CreateDataSourceRequest{
 		Name:     "src",
@@ -283,4 +317,10 @@ func (s *DataSourceUseCaseTestSuite) TestDelete() {
 	resp, err := s.uc.Get(ctx, created.ID)
 	s.NoError(err)
 	s.Nil(resp)
+
+	// Verify distractor src-other still exists
+	otherResp, err := s.uc.Get(ctx, srcOther.ID)
+	s.Require().NoError(err)
+	s.Require().NotNil(otherResp)
+	s.Equal("src-other", otherResp.Name)
 }
