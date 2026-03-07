@@ -11,11 +11,13 @@ var _ api.StrictServerInterface = (*Handler)(nil)
 
 type Handler struct {
 	DataSourceHandler
+	DataTypeHandler
 }
 
-func NewHandler(dsUC DataSourceUseCase) *Handler {
+func NewHandler(dsUC DataSourceUseCase, dtUC DataTypeUseCase) *Handler {
 	return &Handler{
 		DataSourceHandler: DataSourceHandler{uc: dsUC},
+		DataTypeHandler:   DataTypeHandler{uc: dtUC},
 	}
 }
 

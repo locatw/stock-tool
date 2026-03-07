@@ -1,0 +1,49 @@
+type: object
+required:
+  - id
+  - dataSourceId
+  - name
+  - enabled
+  - updateFrequency
+  - updateTimes
+  - backfillEnabled
+  - staleTimeoutMinutes
+  - settings
+  - createdAt
+  - updatedAt
+properties:
+  id:
+    type: string
+    format: uuid
+  dataSourceId:
+    type: string
+    format: uuid
+  name:
+    type: string
+  enabled:
+    type: boolean
+  updateFrequency:
+    type: string
+    enum:
+      - daily
+      - weekly
+      - monthly
+      - hourly
+  updateTimes:
+    type: array
+    items:
+      type: string
+  backfillEnabled:
+    type: boolean
+  staleTimeoutMinutes:
+    type: integer
+    minimum: 0
+  settings:
+    type: object
+    additionalProperties: true
+  createdAt:
+    type: string
+    format: date-time
+  updatedAt:
+    type: string
+    format: date-time

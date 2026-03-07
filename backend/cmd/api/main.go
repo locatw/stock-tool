@@ -83,9 +83,24 @@ func main() {
 		return usecase.NewDataSourceUseCase(repo), nil
 	})
 
+	do.Provide(injector, func(i *do.Injector) (*repository.DataTypeRepository, error) {
+		rawDB := do.MustInvoke[*database.RawDB](i)
+		gormDB, err := database.CreateGormDB(rawDB.DB())
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Gorm DB: %w", err)
+		}
+		return repository.NewDataTypeRepository(gormDB), nil
+	})
+
+	do.Provide(injector, func(i *do.Injector) (*usecase.DataTypeUseCase, error) {
+		repo := do.MustInvoke[*repository.DataTypeRepository](i)
+		return usecase.NewDataTypeUseCase(repo), nil
+	})
+
 	do.Provide(injector, func(i *do.Injector) (*handler.Handler, error) {
 		dsUC := do.MustInvoke[*usecase.DataSourceUseCase](i)
-		return handler.NewHandler(dsUC), nil
+		dtUC := do.MustInvoke[*usecase.DataTypeUseCase](i)
+		return handler.NewHandler(dsUC, dtUC), nil
 	})
 
 	h := do.MustInvoke[*handler.Handler](injector)

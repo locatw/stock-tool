@@ -1,0 +1,110 @@
+package ingestion
+
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
+
+type DataType struct {
+	id                  uuid.UUID
+	dataSourceID        uuid.UUID
+	name                string
+	enabled             bool
+	updateFrequency     string
+	updateTimes         []string
+	backfillEnabled     bool
+	staleTimeoutMinutes int
+	settings            map[string]any
+	createdAt           time.Time
+	updatedAt           time.Time
+}
+
+func NewDataType(
+	dataSourceID uuid.UUID,
+	name string,
+	enabled bool,
+	updateFrequency string,
+	updateTimes []string,
+	backfillEnabled bool,
+	staleTimeoutMinutes int,
+	settings map[string]any,
+) *DataType {
+	now := time.Now()
+	return &DataType{
+		id:                  uuid.Must(uuid.NewV7()),
+		dataSourceID:        dataSourceID,
+		name:                name,
+		enabled:             enabled,
+		updateFrequency:     updateFrequency,
+		updateTimes:         updateTimes,
+		backfillEnabled:     backfillEnabled,
+		staleTimeoutMinutes: staleTimeoutMinutes,
+		settings:            settings,
+		createdAt:           now,
+		updatedAt:           now,
+	}
+}
+
+func NewDataTypeDirectly(
+	id uuid.UUID,
+	dataSourceID uuid.UUID,
+	name string,
+	enabled bool,
+	updateFrequency string,
+	updateTimes []string,
+	backfillEnabled bool,
+	staleTimeoutMinutes int,
+	settings map[string]any,
+	createdAt time.Time,
+	updatedAt time.Time,
+) *DataType {
+	return &DataType{
+		id:                  id,
+		dataSourceID:        dataSourceID,
+		name:                name,
+		enabled:             enabled,
+		updateFrequency:     updateFrequency,
+		updateTimes:         updateTimes,
+		backfillEnabled:     backfillEnabled,
+		staleTimeoutMinutes: staleTimeoutMinutes,
+		settings:            settings,
+		createdAt:           createdAt,
+		updatedAt:           updatedAt,
+	}
+}
+
+func (t *DataType) ID() uuid.UUID            { return t.id }
+func (t *DataType) DataSourceID() uuid.UUID  { return t.dataSourceID }
+func (t *DataType) Name() string             { return t.name }
+func (t *DataType) Enabled() bool            { return t.enabled }
+func (t *DataType) UpdateFrequency() string  { return t.updateFrequency }
+func (t *DataType) UpdateTimes() []string    { return t.updateTimes }
+func (t *DataType) BackfillEnabled() bool    { return t.backfillEnabled }
+func (t *DataType) StaleTimeoutMinutes() int { return t.staleTimeoutMinutes }
+func (t *DataType) Settings() map[string]any { return t.settings }
+func (t *DataType) CreatedAt() time.Time     { return t.createdAt }
+func (t *DataType) UpdatedAt() time.Time     { return t.updatedAt }
+
+func (t *DataType) Update(
+	name string,
+	enabled bool,
+	updateFrequency string,
+	updateTimes []string,
+	backfillEnabled bool,
+	staleTimeoutMinutes int,
+	settings map[string]any,
+) {
+	t.name = name
+	t.enabled = enabled
+	t.updateFrequency = updateFrequency
+	t.updateTimes = updateTimes
+	t.backfillEnabled = backfillEnabled
+	t.staleTimeoutMinutes = staleTimeoutMinutes
+	t.settings = settings
+	t.updatedAt = time.Now()
+}
+
+func (t *DataType) StaleTimeout() time.Duration {
+	return time.Duration(t.staleTimeoutMinutes) * time.Minute
+}

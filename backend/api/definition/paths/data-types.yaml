@@ -1,0 +1,53 @@
+get:
+  operationId: listDataTypes
+  summary: List data types
+  parameters:
+    - name: dataSourceId
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+  responses:
+    "200":
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '../schemas/DataType.yaml'
+    "400":
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/ErrorResponse.yaml'
+post:
+  operationId: createDataType
+  summary: Create a new data type
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../schemas/CreateDataTypeRequest.yaml'
+  responses:
+    "201":
+      description: Created
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/DataType.yaml'
+    "400":
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/ErrorResponse.yaml'
+    "422":
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/ErrorResponse.yaml'

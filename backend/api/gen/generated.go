@@ -23,6 +23,30 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for CreateDataTypeRequestUpdateFrequency.
+const (
+	CreateDataTypeRequestUpdateFrequencyDaily   CreateDataTypeRequestUpdateFrequency = "daily"
+	CreateDataTypeRequestUpdateFrequencyHourly  CreateDataTypeRequestUpdateFrequency = "hourly"
+	CreateDataTypeRequestUpdateFrequencyMonthly CreateDataTypeRequestUpdateFrequency = "monthly"
+	CreateDataTypeRequestUpdateFrequencyWeekly  CreateDataTypeRequestUpdateFrequency = "weekly"
+)
+
+// Defines values for DataTypeUpdateFrequency.
+const (
+	DataTypeUpdateFrequencyDaily   DataTypeUpdateFrequency = "daily"
+	DataTypeUpdateFrequencyHourly  DataTypeUpdateFrequency = "hourly"
+	DataTypeUpdateFrequencyMonthly DataTypeUpdateFrequency = "monthly"
+	DataTypeUpdateFrequencyWeekly  DataTypeUpdateFrequency = "weekly"
+)
+
+// Defines values for UpdateDataTypeRequestUpdateFrequency.
+const (
+	Daily   UpdateDataTypeRequestUpdateFrequency = "daily"
+	Hourly  UpdateDataTypeRequestUpdateFrequency = "hourly"
+	Monthly UpdateDataTypeRequestUpdateFrequency = "monthly"
+	Weekly  UpdateDataTypeRequestUpdateFrequency = "weekly"
+)
+
 // CreateDataSourceRequest defines model for CreateDataSourceRequest.
 type CreateDataSourceRequest struct {
 	Enabled  bool                   `json:"enabled"`
@@ -30,6 +54,21 @@ type CreateDataSourceRequest struct {
 	Settings map[string]interface{} `json:"settings"`
 	Timezone string                 `json:"timezone"`
 }
+
+// CreateDataTypeRequest defines model for CreateDataTypeRequest.
+type CreateDataTypeRequest struct {
+	BackfillEnabled     bool                                 `json:"backfillEnabled"`
+	DataSourceId        openapi_types.UUID                   `json:"dataSourceId"`
+	Enabled             bool                                 `json:"enabled"`
+	Name                string                               `json:"name"`
+	Settings            map[string]interface{}               `json:"settings"`
+	StaleTimeoutMinutes int                                  `json:"staleTimeoutMinutes"`
+	UpdateFrequency     CreateDataTypeRequestUpdateFrequency `json:"updateFrequency"`
+	UpdateTimes         []string                             `json:"updateTimes"`
+}
+
+// CreateDataTypeRequestUpdateFrequency defines model for CreateDataTypeRequest.UpdateFrequency.
+type CreateDataTypeRequestUpdateFrequency string
 
 // DataSource defines model for DataSource.
 type DataSource struct {
@@ -41,6 +80,24 @@ type DataSource struct {
 	Timezone  string                 `json:"timezone"`
 	UpdatedAt time.Time              `json:"updatedAt"`
 }
+
+// DataType defines model for DataType.
+type DataType struct {
+	BackfillEnabled     bool                    `json:"backfillEnabled"`
+	CreatedAt           time.Time               `json:"createdAt"`
+	DataSourceId        openapi_types.UUID      `json:"dataSourceId"`
+	Enabled             bool                    `json:"enabled"`
+	Id                  openapi_types.UUID      `json:"id"`
+	Name                string                  `json:"name"`
+	Settings            map[string]interface{}  `json:"settings"`
+	StaleTimeoutMinutes int                     `json:"staleTimeoutMinutes"`
+	UpdateFrequency     DataTypeUpdateFrequency `json:"updateFrequency"`
+	UpdateTimes         []string                `json:"updateTimes"`
+	UpdatedAt           time.Time               `json:"updatedAt"`
+}
+
+// DataTypeUpdateFrequency defines model for DataType.UpdateFrequency.
+type DataTypeUpdateFrequency string
 
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
@@ -55,14 +112,42 @@ type UpdateDataSourceRequest struct {
 	Timezone string                 `json:"timezone"`
 }
 
+// UpdateDataTypeRequest defines model for UpdateDataTypeRequest.
+type UpdateDataTypeRequest struct {
+	BackfillEnabled     bool                                 `json:"backfillEnabled"`
+	Enabled             bool                                 `json:"enabled"`
+	Name                string                               `json:"name"`
+	Settings            map[string]interface{}               `json:"settings"`
+	StaleTimeoutMinutes int                                  `json:"staleTimeoutMinutes"`
+	UpdateFrequency     UpdateDataTypeRequestUpdateFrequency `json:"updateFrequency"`
+	UpdateTimes         []string                             `json:"updateTimes"`
+}
+
+// UpdateDataTypeRequestUpdateFrequency defines model for UpdateDataTypeRequest.UpdateFrequency.
+type UpdateDataTypeRequestUpdateFrequency string
+
 // DataSourceID defines model for DataSourceID.
 type DataSourceID = openapi_types.UUID
+
+// DataTypeID defines model for DataTypeID.
+type DataTypeID = openapi_types.UUID
+
+// ListDataTypesParams defines parameters for ListDataTypes.
+type ListDataTypesParams struct {
+	DataSourceId *openapi_types.UUID `form:"dataSourceId,omitempty" json:"dataSourceId,omitempty"`
+}
 
 // CreateDataSourceJSONRequestBody defines body for CreateDataSource for application/json ContentType.
 type CreateDataSourceJSONRequestBody = CreateDataSourceRequest
 
 // UpdateDataSourceJSONRequestBody defines body for UpdateDataSource for application/json ContentType.
 type UpdateDataSourceJSONRequestBody = UpdateDataSourceRequest
+
+// CreateDataTypeJSONRequestBody defines body for CreateDataType for application/json ContentType.
+type CreateDataTypeJSONRequestBody = CreateDataTypeRequest
+
+// UpdateDataTypeJSONRequestBody defines body for UpdateDataType for application/json ContentType.
+type UpdateDataTypeJSONRequestBody = UpdateDataTypeRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -81,6 +166,21 @@ type ServerInterface interface {
 	// Update a data source
 	// (PUT /api/v1/data-sources/{id})
 	UpdateDataSource(ctx echo.Context, id DataSourceID) error
+	// List data types
+	// (GET /api/v1/data-types)
+	ListDataTypes(ctx echo.Context, params ListDataTypesParams) error
+	// Create a new data type
+	// (POST /api/v1/data-types)
+	CreateDataType(ctx echo.Context) error
+	// Delete a data type
+	// (DELETE /api/v1/data-types/{id})
+	DeleteDataType(ctx echo.Context, id DataTypeID) error
+	// Get a data type by ID
+	// (GET /api/v1/data-types/{id})
+	GetDataType(ctx echo.Context, id DataTypeID) error
+	// Update a data type
+	// (PUT /api/v1/data-types/{id})
+	UpdateDataType(ctx echo.Context, id DataTypeID) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -154,6 +254,81 @@ func (w *ServerInterfaceWrapper) UpdateDataSource(ctx echo.Context) error {
 	return err
 }
 
+// ListDataTypes converts echo context to params.
+func (w *ServerInterfaceWrapper) ListDataTypes(ctx echo.Context) error {
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDataTypesParams
+	// ------------- Optional query parameter "dataSourceId" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "dataSourceId", ctx.QueryParams(), &params.DataSourceId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter dataSourceId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListDataTypes(ctx, params)
+	return err
+}
+
+// CreateDataType converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateDataType(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreateDataType(ctx)
+	return err
+}
+
+// DeleteDataType converts echo context to params.
+func (w *ServerInterfaceWrapper) DeleteDataType(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "id" -------------
+	var id DataTypeID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", ctx.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.DeleteDataType(ctx, id)
+	return err
+}
+
+// GetDataType converts echo context to params.
+func (w *ServerInterfaceWrapper) GetDataType(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "id" -------------
+	var id DataTypeID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", ctx.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetDataType(ctx, id)
+	return err
+}
+
+// UpdateDataType converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateDataType(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "id" -------------
+	var id DataTypeID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", ctx.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UpdateDataType(ctx, id)
+	return err
+}
+
 // This is a simple interface which specifies echo.Route addition functions which
 // are present on both echo.Echo and echo.Group, since we want to allow using
 // either of them for path registration
@@ -187,6 +362,11 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.DELETE(baseURL+"/api/v1/data-sources/:id", wrapper.DeleteDataSource)
 	router.GET(baseURL+"/api/v1/data-sources/:id", wrapper.GetDataSource)
 	router.PUT(baseURL+"/api/v1/data-sources/:id", wrapper.UpdateDataSource)
+	router.GET(baseURL+"/api/v1/data-types", wrapper.ListDataTypes)
+	router.POST(baseURL+"/api/v1/data-types", wrapper.CreateDataType)
+	router.DELETE(baseURL+"/api/v1/data-types/:id", wrapper.DeleteDataType)
+	router.GET(baseURL+"/api/v1/data-types/:id", wrapper.GetDataType)
+	router.PUT(baseURL+"/api/v1/data-types/:id", wrapper.UpdateDataType)
 
 }
 
@@ -346,6 +526,163 @@ func (response UpdateDataSource422JSONResponse) VisitUpdateDataSourceResponse(w 
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListDataTypesRequestObject struct {
+	Params ListDataTypesParams
+}
+
+type ListDataTypesResponseObject interface {
+	VisitListDataTypesResponse(w http.ResponseWriter) error
+}
+
+type ListDataTypes200JSONResponse []DataType
+
+func (response ListDataTypes200JSONResponse) VisitListDataTypesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListDataTypes400JSONResponse ErrorResponse
+
+func (response ListDataTypes400JSONResponse) VisitListDataTypesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateDataTypeRequestObject struct {
+	Body *CreateDataTypeJSONRequestBody
+}
+
+type CreateDataTypeResponseObject interface {
+	VisitCreateDataTypeResponse(w http.ResponseWriter) error
+}
+
+type CreateDataType201JSONResponse DataType
+
+func (response CreateDataType201JSONResponse) VisitCreateDataTypeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateDataType400JSONResponse ErrorResponse
+
+func (response CreateDataType400JSONResponse) VisitCreateDataTypeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateDataType422JSONResponse ErrorResponse
+
+func (response CreateDataType422JSONResponse) VisitCreateDataTypeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteDataTypeRequestObject struct {
+	Id DataTypeID `json:"id"`
+}
+
+type DeleteDataTypeResponseObject interface {
+	VisitDeleteDataTypeResponse(w http.ResponseWriter) error
+}
+
+type DeleteDataType204Response struct {
+}
+
+func (response DeleteDataType204Response) VisitDeleteDataTypeResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteDataType404JSONResponse ErrorResponse
+
+func (response DeleteDataType404JSONResponse) VisitDeleteDataTypeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetDataTypeRequestObject struct {
+	Id DataTypeID `json:"id"`
+}
+
+type GetDataTypeResponseObject interface {
+	VisitGetDataTypeResponse(w http.ResponseWriter) error
+}
+
+type GetDataType200JSONResponse DataType
+
+func (response GetDataType200JSONResponse) VisitGetDataTypeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetDataType404JSONResponse ErrorResponse
+
+func (response GetDataType404JSONResponse) VisitGetDataTypeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateDataTypeRequestObject struct {
+	Id   DataTypeID `json:"id"`
+	Body *UpdateDataTypeJSONRequestBody
+}
+
+type UpdateDataTypeResponseObject interface {
+	VisitUpdateDataTypeResponse(w http.ResponseWriter) error
+}
+
+type UpdateDataType200JSONResponse DataType
+
+func (response UpdateDataType200JSONResponse) VisitUpdateDataTypeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateDataType400JSONResponse ErrorResponse
+
+func (response UpdateDataType400JSONResponse) VisitUpdateDataTypeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateDataType404JSONResponse ErrorResponse
+
+func (response UpdateDataType404JSONResponse) VisitUpdateDataTypeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateDataType422JSONResponse ErrorResponse
+
+func (response UpdateDataType422JSONResponse) VisitUpdateDataTypeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// List data sources
@@ -363,6 +700,21 @@ type StrictServerInterface interface {
 	// Update a data source
 	// (PUT /api/v1/data-sources/{id})
 	UpdateDataSource(ctx context.Context, request UpdateDataSourceRequestObject) (UpdateDataSourceResponseObject, error)
+	// List data types
+	// (GET /api/v1/data-types)
+	ListDataTypes(ctx context.Context, request ListDataTypesRequestObject) (ListDataTypesResponseObject, error)
+	// Create a new data type
+	// (POST /api/v1/data-types)
+	CreateDataType(ctx context.Context, request CreateDataTypeRequestObject) (CreateDataTypeResponseObject, error)
+	// Delete a data type
+	// (DELETE /api/v1/data-types/{id})
+	DeleteDataType(ctx context.Context, request DeleteDataTypeRequestObject) (DeleteDataTypeResponseObject, error)
+	// Get a data type by ID
+	// (GET /api/v1/data-types/{id})
+	GetDataType(ctx context.Context, request GetDataTypeRequestObject) (GetDataTypeResponseObject, error)
+	// Update a data type
+	// (PUT /api/v1/data-types/{id})
+	UpdateDataType(ctx context.Context, request UpdateDataTypeRequestObject) (UpdateDataTypeResponseObject, error)
 }
 
 type StrictHandlerFunc = strictecho.StrictEchoHandlerFunc
@@ -510,23 +862,163 @@ func (sh *strictHandler) UpdateDataSource(ctx echo.Context, id DataSourceID) err
 	return nil
 }
 
+// ListDataTypes operation middleware
+func (sh *strictHandler) ListDataTypes(ctx echo.Context, params ListDataTypesParams) error {
+	var request ListDataTypesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDataTypes(ctx.Request().Context(), request.(ListDataTypesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDataTypes")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(ListDataTypesResponseObject); ok {
+		return validResponse.VisitListDataTypesResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// CreateDataType operation middleware
+func (sh *strictHandler) CreateDataType(ctx echo.Context) error {
+	var request CreateDataTypeRequestObject
+
+	var body CreateDataTypeJSONRequestBody
+	if err := ctx.Bind(&body); err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateDataType(ctx.Request().Context(), request.(CreateDataTypeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateDataType")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(CreateDataTypeResponseObject); ok {
+		return validResponse.VisitCreateDataTypeResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// DeleteDataType operation middleware
+func (sh *strictHandler) DeleteDataType(ctx echo.Context, id DataTypeID) error {
+	var request DeleteDataTypeRequestObject
+
+	request.Id = id
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteDataType(ctx.Request().Context(), request.(DeleteDataTypeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteDataType")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(DeleteDataTypeResponseObject); ok {
+		return validResponse.VisitDeleteDataTypeResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// GetDataType operation middleware
+func (sh *strictHandler) GetDataType(ctx echo.Context, id DataTypeID) error {
+	var request GetDataTypeRequestObject
+
+	request.Id = id
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDataType(ctx.Request().Context(), request.(GetDataTypeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDataType")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(GetDataTypeResponseObject); ok {
+		return validResponse.VisitGetDataTypeResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// UpdateDataType operation middleware
+func (sh *strictHandler) UpdateDataType(ctx echo.Context, id DataTypeID) error {
+	var request UpdateDataTypeRequestObject
+
+	request.Id = id
+
+	var body UpdateDataTypeJSONRequestBody
+	if err := ctx.Bind(&body); err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateDataType(ctx.Request().Context(), request.(UpdateDataTypeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateDataType")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(UpdateDataTypeResponseObject); ok {
+		return validResponse.VisitUpdateDataTypeResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+xWQU/rOBD+K9HsHkOTQg8oN1hWqBK7QsDuBXFw42lrXmIbe9Knvir//cl2SpM28EAq",
-	"lMM7Np2Z75tvxp+9glyVWkmUZCFbgWaGlUho/K8LRuxWVSbH8YX7LSRkoBnNIQbJSoQMBIcYDD5VwiCH",
-	"jEyFMdh8jiVzGVNlSkaQQVX5SFpql2XJCDmDuq7XwR7vL4OMcIN6g08VWvLEjNJoSKAPRMkmhcNbrStO",
-	"lCqQSajXzFZQCnmFckZzyIY7yDFYJBJy5usxzgUJJVlx3cIJzTSJavKIOblEEiX+UPLXGHVbmfvAK37m",
-	"3irUIvPQA7gRZFeJ3EvGz6ijNmeER6489DT+qniCv2FsG40/RtWdqpXm7+tyS3rfxJv0j1uKtnH75vK3",
-	"McrcoNVK2p7RoPu7p50tbiGsr/5/Hv33cegAujJCTpWDK0SOjfSNHf0zvnNjMwVkMCfSNksSpVFaL+BA",
-	"mVnSJNnExXr+VLjUW1L5t+hOqSI6ux5DDAs0VihnecNBOkhdrCvFtIAMTgbp4ARi74Zes4RpkSyGCWfE",
-	"jgKc/z5DPzAnI3OajjlkcCUsbeZqvYWGNfI5x2nqz7aShNKnM60LkfsCyaN1pFYtlxWEpU/80+AUMvgj",
-	"2bh60vhr0nKR+llVZgxbBlE52twITaHl2yrP0dppVURrai5t9E5mrxHqHp8eDueMR6bZeX9TVGXJzLLR",
-	"L3JKR2ul6xi0sj1Sb98pzXWFls4VX+6tmZeurrq79u4M1TvTHu6NRnvIu4IGkvywg4xhdHz8edj/s0Jw",
-	"XzkKTtvdpCBJxCKJ39sb5cP6znSyErx2rDgWSLi7cBf+e2fh2q+q+/5+NiFJ59VVP+xsyyigt5sMmM1g",
-	"R58n7r+KoqmqJN9SNfCJWFfRuN8ML5E+UK30k87Wi4b5BcZxidSdRTRZRk6uGHTVM5Hth8c+hrJ/y33p",
-	"efQmyz34WhzQfg+0kl/L+MP2bFuUj0GzWO95t+SVylkRcVxgoXSJkqIQ23lyZklSuLi5spSdpqcp1A/1",
-	"zwAAAP//H0JYcWgPAAA=",
+	"H4sIAAAAAAAC/+xZTW/bOBD9K8LsHlVLSXModGs33SJAuiga716CHGhpbLORSIUcpdAa+u8LknIkWXJi",
+	"Z/2RBrnF6pAzfO/N6FFdQCyzXAoUpCFaQM4Uy5BQ2V/njNiVLFSMF+fmNxcQQc5oDj4IliFEwBPwQeFd",
+	"wRUmEJEq0AcdzzFjZsVUqowRRFAUNpLK3KzSpLiYQVX5Nse4zPeWoVoG2xP9oZARNuf6jncFarJHVzJH",
+	"RRxtIAo2SU2+xXLHiZQpMgHVsrIFZFxcopjRHKKTXmYfNBJxMbP7sSThxKVg6bdWHneYeqGc/MCYzELi",
+	"Gf4rxdM5qjYy164u/6H21katYm4GEjawGCrWgjJh8e2Up+nnx8BJGtEkGxDkHxdqTSzFMc9QFvSVi4Lc",
+	"STMueFZkEIUPa7ggnKEyi4o8YYR/GuhRxKXTi4m+hoTxtAQffiLe2j8yKWhu/5rLQqVlC/+mfLehKcNm",
+	"54SZbuHRBNYPmFKs7NHfQd7vq2G17G5ev0fvMDpPSKnprb5+Yiuz5CN1dGFKeGeUurU4+GYCW2poPw26",
+	"hswtTrlCIx8kb6iV/Rai7bzreBnbh8/q6mdQt9tBcDSuf+kJsSM1HnyybKPsz0pJ9R11LoUekDeafx6A",
+	"auWcLmxo/79t9jfPsBaW/+8Z3izAjizAMd75pgYuptJUm/IY6y6s7fvXi7FJqlKIYE6U6ygIZI5C214a",
+	"STUL6kU6MLFWypSapVck41tvLGXqffx2AT7co9JcmivCySgchSbWbMVyDhG8H4Wj9+Db24NFLmA5D+5P",
+	"AjO83rl09vkMrUyNLpgRiXk7wSXX1LS4tlcON1HsmtMwtAZGCkJhl7M8T3lsNwh+aFPUonUreaDvd4VT",
+	"iOC3oLlnBfV9JGhZpT6v5gWKOlY8J3fkqyKOUetpkXrL0syysy0re6yg7iQdqOETSzxVd7q9WRVZxlRZ",
+	"4+cZpL0l0pUPudQDUK/ewerrHWr6JJNyZ4dZd9Wruj1jhkLVY/tkZ2W0Se4D6opMjkukD2enp4fL/Q9L",
+	"eWJ39txLt6skB4nHPIE/24qyYUM9HSx4UpmqEkyRsC+4c/u8I7j2d47r4fM0IUHnO0h101PLmcvePqTL",
+	"WRN7djhw/5LkTWUhkhVUXT0e6yLqDw/DL0h7RCs8UG+tHZgvgI4vSF0uvEnpGbh8yIsBRlY96C5I2f3I",
+	"XeeUNxq5R5fFEcfvkST5sga/U8/qiFod+sYmPW3jxjaq1yT28/Jdgapsvi+v3G03/7J8cyiPaD/bvCKH",
+	"6CjcwB/ag+/bHbZvr0fwho7cN2f4LGdIDryhEbGFK6xltv0Ltf5/q9fgCKmeMY/5wT3gFB6kl34RJ2g4",
+	"2NgH7oaMfXrArQfrkcXw5v9ekv+jB/o0qvulvrsbXsqYpV6C95jKPENBnovtfHCMgiA1cXOpKfoQfgih",
+	"uqn+CwAA//85WcW3+CAAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

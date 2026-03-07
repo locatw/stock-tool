@@ -14,16 +14,28 @@ paths:
     $ref: './paths/data-sources.yaml'
   /api/v1/data-sources/{id}:
     $ref: './paths/data-source.yaml'
+  /api/v1/data-types:
+    $ref: './paths/data-types.yaml'
+  /api/v1/data-types/{id}:
+    $ref: './paths/data-type.yaml'
 components:
   parameters:
     DataSourceID:
       $ref: './parameters/DataSourceID.yaml'
+    DataTypeID:
+      $ref: './parameters/DataTypeID.yaml'
   schemas:
     DataSource:
       $ref: './schemas/DataSource.yaml'
+    DataType:
+      $ref: './schemas/DataType.yaml'
     ErrorResponse:
       $ref: './schemas/ErrorResponse.yaml'
     CreateDataSourceRequest:
       $ref: './schemas/CreateDataSourceRequest.yaml'
     UpdateDataSourceRequest:
       $ref: './schemas/UpdateDataSourceRequest.yaml'
+    CreateDataTypeRequest:
+      $ref: './schemas/CreateDataTypeRequest.yaml'
+    UpdateDataTypeRequest:
+      $ref: './schemas/UpdateDataTypeRequest.yaml'

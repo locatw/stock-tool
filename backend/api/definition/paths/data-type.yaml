@@ -1,0 +1,68 @@
+get:
+  operationId: getDataType
+  summary: Get a data type by ID
+  parameters:
+    - $ref: '../parameters/DataTypeID.yaml'
+  responses:
+    "200":
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/DataType.yaml'
+    "404":
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/ErrorResponse.yaml'
+put:
+  operationId: updateDataType
+  summary: Update a data type
+  parameters:
+    - $ref: '../parameters/DataTypeID.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../schemas/UpdateDataTypeRequest.yaml'
+  responses:
+    "200":
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/DataType.yaml'
+    "400":
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/ErrorResponse.yaml'
+    "404":
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/ErrorResponse.yaml'
+    "422":
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/ErrorResponse.yaml'
+delete:
+  operationId: deleteDataType
+  summary: Delete a data type
+  parameters:
+    - $ref: '../parameters/DataTypeID.yaml'
+  responses:
+    "204":
+      description: Deleted
+    "404":
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/ErrorResponse.yaml'
