@@ -8,6 +8,7 @@
 
 ## Documentation Index
 
+- [doc/principles.md](doc/principles.md) — Cross-cutting engineering principles (DRY, YAGNI); apply to all changes
 - [doc/project-overview.md](doc/project-overview.md) — What this project does and its entry points
 - [doc/architecture.md](doc/architecture.md) — Clean architecture layers, domain model, database design
 - [doc/coding-guidelines/go/coding.md](doc/coding-guidelines/go/coding.md) — Go coding conventions

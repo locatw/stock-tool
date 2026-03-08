@@ -303,10 +303,35 @@ s3Key := extract.GenerateS3Key(source, dataType, now, ext)
 
 Each component that requires a specific timezone is responsible for converting it internally. Rationale: keeps upper layers free from infrastructure concerns and avoids redundant conversions.
 
-## 11. YAGNI (You Aren't Gonna Need It)
+## 11. Applying YAGNI to Go Code
 
-Do not implement functionality until it is actually needed:
+Applying YAGNI (doc/principles.md) to Go code:
 
 - Do not add repository methods that are not called by any consumer
 - Do not add domain or usecase logic "in preparation" for future requirements
 - Remove methods when all callers are gone
+
+## 12. Applying DRY to Go Code
+
+Applying DRY (doc/principles.md) to Go code means eliminating duplication where a missed
+update would cause a bug or inconsistency, not eliminating every repeated literal.
+
+Apply DRY when:
+
+- A change in one place must propagate to every other copy to remain correct.
+- The same domain rule or constraint appears in multiple layers.
+
+Do not apply DRY when:
+
+- The duplication is small and accidental (e.g., two tests happen to construct the same struct).
+- Extracting a helper would make the code harder to read than the duplication itself.
+
+Concrete cases in this codebase:
+
+- Domain-to-DB and DB-to-domain field mappings must be centralized in `toEntity()` and
+  `toDBModel()` (see section 8); adding a field to a domain entity requires updating every
+  mapping, and a central function ensures nothing is missed.
+- Database and S3 test setup must use `testutil.DBTest` and `testutil.S3Test`; do not
+  duplicate Docker container lifecycle code per suite.
+- Do not extract test fixture construction into helpers; keep struct literals inline in each
+  test method to preserve readability and self-containedness.

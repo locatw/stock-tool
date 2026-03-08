@@ -8,7 +8,7 @@ All documentation must be written in English.
 
 - Use Markdown (`.md`) format
 - Name files according to their purpose (e.g., `markdown.md` for Markdown rules)
-- Follow the Markdown style guide in `doc/coding-guidelines/markdown.md`
+- Follow the Markdown style guide in `doc/coding-guidelines/markdown/style.md`
 
 ## Structure
 
@@ -57,12 +57,11 @@ information density:
 - For option comparisons, use tables (Option | Behavior | Pros | Cons)
 - Eliminate structural filler ("This section defines..." / "The following
   describes...") — let headings convey structure
-- Apply DRY across documents: explain a concept fully in one canonical
-  location, use brief summary + link elsewhere
+- Apply DRY across documents (see doc/principles.md)
 
-## Principle: DRY (Don't Repeat Yourself)
+## Principle: Applying DRY to Documentation
 
-Avoid duplicating operational procedures and frequently changing values across multiple documents:
+Applying DRY (doc/principles.md) to documentation — avoid duplicating operational procedures and frequently changing values:
 
 - When a procedure is documented in another file (e.g., environment setup in `doc/requirements.md`), link instead of restating
 - When a configuration file is the source of truth (port numbers, credentials, S3 bucket paths, etc.), reference the config file path instead of copying values into prose
