@@ -18,6 +18,8 @@ paths:
     $ref: './paths/data-types.yaml'
   /api/v1/data-types/{id}:
     $ref: './paths/data-type.yaml'
+  /health:
+    $ref: './paths/health.yaml'
 components:
   parameters:
     DataSourceID:

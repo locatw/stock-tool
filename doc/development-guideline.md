@@ -38,6 +38,23 @@ make lint-api   # Run Redocly lint on OpenAPI definition
 - Go: Configuration `backend/.golangci.yml` — managed as a `go tool` dependency, no separate installation needed
 - OpenAPI: Configuration `backend/api/config/redocly.yaml` — runs via Docker, no separate installation needed
 
+## API Verification
+
+```bash
+# Full automated verification (creates and destroys a temporary DB)
+/verify-api
+
+# Manual server lifecycle
+scripts/api-server.sh start
+scripts/api-server.sh wait
+curl localhost:8080/health
+scripts/api-server.sh stop
+```
+
+- `/verify-api` creates a disposable `stock_verify` DB, runs all endpoint tests, then drops it
+- The `stock` DB used for manual development is never affected
+- Override port and DB name via `PORT` and `DB_NAME` environment variables
+
 ## API Docs
 
 ```bash

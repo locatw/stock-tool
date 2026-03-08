@@ -181,6 +181,9 @@ type ServerInterface interface {
 	// Update a data type
 	// (PUT /api/v1/data-types/{id})
 	UpdateDataType(ctx echo.Context, id DataTypeID) error
+	// Check API server health
+	// (GET /health)
+	HealthCheck(ctx echo.Context) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -329,6 +332,15 @@ func (w *ServerInterfaceWrapper) UpdateDataType(ctx echo.Context) error {
 	return err
 }
 
+// HealthCheck converts echo context to params.
+func (w *ServerInterfaceWrapper) HealthCheck(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.HealthCheck(ctx)
+	return err
+}
+
 // This is a simple interface which specifies echo.Route addition functions which
 // are present on both echo.Echo and echo.Group, since we want to allow using
 // either of them for path registration
@@ -367,6 +379,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.DELETE(baseURL+"/api/v1/data-types/:id", wrapper.DeleteDataType)
 	router.GET(baseURL+"/api/v1/data-types/:id", wrapper.GetDataType)
 	router.PUT(baseURL+"/api/v1/data-types/:id", wrapper.UpdateDataType)
+	router.GET(baseURL+"/health", wrapper.HealthCheck)
 
 }
 
@@ -683,6 +696,24 @@ func (response UpdateDataType422JSONResponse) VisitUpdateDataTypeResponse(w http
 	return json.NewEncoder(w).Encode(response)
 }
 
+type HealthCheckRequestObject struct {
+}
+
+type HealthCheckResponseObject interface {
+	VisitHealthCheckResponse(w http.ResponseWriter) error
+}
+
+type HealthCheck200JSONResponse struct {
+	Status string `json:"status"`
+}
+
+func (response HealthCheck200JSONResponse) VisitHealthCheckResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// List data sources
@@ -715,6 +746,9 @@ type StrictServerInterface interface {
 	// Update a data type
 	// (PUT /api/v1/data-types/{id})
 	UpdateDataType(ctx context.Context, request UpdateDataTypeRequestObject) (UpdateDataTypeResponseObject, error)
+	// Check API server health
+	// (GET /health)
+	HealthCheck(ctx context.Context, request HealthCheckRequestObject) (HealthCheckResponseObject, error)
 }
 
 type StrictHandlerFunc = strictecho.StrictEchoHandlerFunc
@@ -997,28 +1031,52 @@ func (sh *strictHandler) UpdateDataType(ctx echo.Context, id DataTypeID) error {
 	return nil
 }
 
+// HealthCheck operation middleware
+func (sh *strictHandler) HealthCheck(ctx echo.Context) error {
+	var request HealthCheckRequestObject
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.HealthCheck(ctx.Request().Context(), request.(HealthCheckRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "HealthCheck")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(HealthCheckResponseObject); ok {
+		return validResponse.VisitHealthCheckResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+xZTW/bOBD9K8LsHlVLSXModGs33SJAuiga716CHGhpbLORSIUcpdAa+u8LknIkWXJi",
-	"Z/2RBrnF6pAzfO/N6FFdQCyzXAoUpCFaQM4Uy5BQ2V/njNiVLFSMF+fmNxcQQc5oDj4IliFEwBPwQeFd",
-	"wRUmEJEq0AcdzzFjZsVUqowRRFAUNpLK3KzSpLiYQVX5Nse4zPeWoVoG2xP9oZARNuf6jncFarJHVzJH",
-	"RRxtIAo2SU2+xXLHiZQpMgHVsrIFZFxcopjRHKKTXmYfNBJxMbP7sSThxKVg6bdWHneYeqGc/MCYzELi",
-	"Gf4rxdM5qjYy164u/6H21katYm4GEjawGCrWgjJh8e2Up+nnx8BJGtEkGxDkHxdqTSzFMc9QFvSVi4Lc",
-	"STMueFZkEIUPa7ggnKEyi4o8YYR/GuhRxKXTi4m+hoTxtAQffiLe2j8yKWhu/5rLQqVlC/+mfLehKcNm",
-	"54SZbuHRBNYPmFKs7NHfQd7vq2G17G5ev0fvMDpPSKnprb5+Yiuz5CN1dGFKeGeUurU4+GYCW2poPw26",
-	"hswtTrlCIx8kb6iV/Rai7bzreBnbh8/q6mdQt9tBcDSuf+kJsSM1HnyybKPsz0pJ9R11LoUekDeafx6A",
-	"auWcLmxo/79t9jfPsBaW/+8Z3izAjizAMd75pgYuptJUm/IY6y6s7fvXi7FJqlKIYE6U6ygIZI5C214a",
-	"STUL6kU6MLFWypSapVck41tvLGXqffx2AT7co9JcmivCySgchSbWbMVyDhG8H4Wj9+Db24NFLmA5D+5P",
-	"AjO83rl09vkMrUyNLpgRiXk7wSXX1LS4tlcON1HsmtMwtAZGCkJhl7M8T3lsNwh+aFPUonUreaDvd4VT",
-	"iOC3oLlnBfV9JGhZpT6v5gWKOlY8J3fkqyKOUetpkXrL0syysy0re6yg7iQdqOETSzxVd7q9WRVZxlRZ",
-	"4+cZpL0l0pUPudQDUK/ewerrHWr6JJNyZ4dZd9Wruj1jhkLVY/tkZ2W0Se4D6opMjkukD2enp4fL/Q9L",
-	"eWJ39txLt6skB4nHPIE/24qyYUM9HSx4UpmqEkyRsC+4c/u8I7j2d47r4fM0IUHnO0h101PLmcvePqTL",
-	"WRN7djhw/5LkTWUhkhVUXT0e6yLqDw/DL0h7RCs8UG+tHZgvgI4vSF0uvEnpGbh8yIsBRlY96C5I2f3I",
-	"XeeUNxq5R5fFEcfvkST5sga/U8/qiFod+sYmPW3jxjaq1yT28/Jdgapsvi+v3G03/7J8cyiPaD/bvCKH",
-	"6CjcwB/ag+/bHbZvr0fwho7cN2f4LGdIDryhEbGFK6xltv0Ltf5/q9fgCKmeMY/5wT3gFB6kl34RJ2g4",
-	"2NgH7oaMfXrArQfrkcXw5v9ekv+jB/o0qvulvrsbXsqYpV6C95jKPENBnovtfHCMgiA1cXOpKfoQfgih",
-	"uqn+CwAA//85WcW3+CAAAA==",
+	"H4sIAAAAAAAC/+xaTXPbNhD9Kxy0R8akEx8yvDlxmnrG6XhitRePDzC5EhGBAA0snbIa/vcOAMr8lC05",
+	"+nAyvlkUFrv79u3yAfKCxDLLpQCBmkQLklNFM0BQ9tMZRXolCxXD+Zn5zASJSE4xJT4RNAMSEZYQnyi4",
+	"K5iChESoCvCJjlPIqLGYSpVRJBEpCrsSy9xYaVRMzEhV+dbHpMx35qFaLrYZfVRAEZq8vsJdARpt6krm",
+	"oJCBXQiC3nLjb7Hc8VZKDlSQahnZgmRMXICYYUqi44Fnn2hAZGJm96NJwpBJQflly49LpjaUt98gRmOI",
+	"LIP/pHjaR9VG5trF5T/E3tqoFczNiMMGFlOKlaDc0ng+ZZx/egycpCFNskaB/MNCrZFymLAMZIFfmCjQ",
+	"ZZoxwbIiI1H4YMMEwgyUMSryhCL8YaAHEZeOL2b1NUko4yXxyXeAuf0jkwJT+1cqC8XLFv5N+G5DE4b1",
+	"zhAy3cKjWVg/oErRclD+DvL+kA39sLt+/UF5x9F5gkpNbw35E1uaJafY4YUJ4Y1h6sbkYOsRbMmh3TTo",
+	"imJukGWvjGy0eGOt7LcQbftdVZeJffisrn5G6bY7CA5W6596QmyJjXufLJsw+5NSUn0FnUuhR+gN5usR",
+	"qHp5umVj+/9tvb9qhpWw/LhmeJUAW5IAh3jnmxiYmEoTLWcx1F1Yy/cv5xPjVHESkRQx11EQyByEtr10",
+	"JNUsqI10YNZaKiM3plco47k3kZJ7p5fnxCf3oDST5ohwfBQehWat2YrmjETk3VF49I749vRgkQtozoL7",
+	"48AMrzfOnX0+A0tTwwtqSGLeTuSCaWxaXNsjh5so1uZtGFoBIwWCsOY0zzmL7QbBN22CWrROJQ/l+13B",
+	"lETkt6A5ZwX1eSRoSaVhXc0LFHSsWI4u5asijkHracG9ZWjG7GTDyB4LqDtJR2L4QBNP1Z1uT1ZFllFV",
+	"1vh5BmlviXTlk1zqEaj7Z7D6eAcaP8ik3Foyq456VbdnzFCoBtU+3loY7SIPAXVBJoctpE9O3r7dn+9/",
+	"KGeJ3dlzL90ukxwkHvUEfG8zyi4b6+lgwZLKRJUAB4Qh4c7s8w7h2vcc1+P5NEuCzj1IdTNgy4nz3k7S",
+	"+awLe7I/cP+S6E1lIZIeqi4ej3YR9ceH4WfAHaIV7qm3Vg7MF1COz4DdWni3pWfg8klejFSkr0G3UZTt",
+	"j9xVSnmtkXtwWhxw/B6Iki9r8Dv29EdUf+gbmfS0jJvYVYMmsdfLdwWosrlf7p1t179ZvtmXRrTXNr+Q",
+	"QnQlXEMf2sR3rQ7bp9cDaENX3Fdl+CxliA68sRGxgSqsabb5C7X+3epXUIRYz5jH9OAOcAr30ks/iRI0",
+	"NVhbB26nGLvUgBsP1gOT4VX/vST914z2FCjHdKXk+9N+/TGFeP6jt3bdm2uNFAt3sf8vzXJ7JSnnT/5g",
+	"UpuN35P2qAjqHpTHtOdyLPsvPJOUd3p57mm3sobC/VeDfeTavrvthYwp9xK4By7zDATW5p172CgIuFmX",
+	"So3R+/B9SKqb6v8AAAD//7xUn2kPIgAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

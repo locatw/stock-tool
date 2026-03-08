@@ -1,0 +1,16 @@
+get:
+  operationId: healthCheck
+  summary: Check API server health
+  responses:
+    "200":
+      description: Server is healthy
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - status
+            properties:
+              status:
+                type: string
+                example: ok
