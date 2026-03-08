@@ -56,5 +56,9 @@
         ]
       }
     ]
-  }
+  },
+  "enabledPlugins": {
+    "gopls-lsp@claude-plugins-official": true
+  },
+  "enabledMcpjsonServers": ["fetch", "aws-docs", "postgres"]
 }
