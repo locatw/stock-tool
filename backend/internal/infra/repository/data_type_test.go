@@ -22,9 +22,8 @@ var dataTypeCmpOpts = cmp.Options{
 
 type DataTypeRepositoryTestSuite struct {
 	testutil.DBTest
-	repo       *DataTypeRepository
-	sourceRepo *DataSourceRepository
-	db         *gorm.DB
+	repo *DataTypeRepository
+	db   *gorm.DB
 }
 
 func TestDataTypeRepository(t *testing.T) {
@@ -39,14 +38,13 @@ func (s *DataTypeRepositoryTestSuite) SetupTest() {
 
 	s.db = db
 	s.repo = NewDataTypeRepository(db)
-	s.sourceRepo = NewDataSourceRepository(db)
 }
 
 func (s *DataTypeRepositoryTestSuite) TearDownTest() {
 	s.Require().NoError(s.CleanupMigrations())
 }
 
-func (s *DataTypeRepositoryTestSuite) seedDataSource() {
+func (s *DataTypeRepositoryTestSuite) seedDataSource() uuid.UUID {
 	now := time.Now()
 	source := &DataSource{
 		ID:        uuid.Must(uuid.NewV7()),
@@ -90,17 +88,15 @@ func (s *DataTypeRepositoryTestSuite) seedDataSource() {
 	for _, dt := range dataTypes {
 		s.Require().NoError(s.db.Create(dt).Error)
 	}
+	return source.ID
 }
 
 func (s *DataTypeRepositoryTestSuite) TestCreate() {
 	ctx := context.Background()
-	s.seedDataSource()
-
-	found, err := s.sourceRepo.FindByName(ctx, "j-quants")
-	s.Require().NoError(err)
+	srcID := s.seedDataSource()
 
 	dt := ingestion.NewDataType(
-		found.ID(),
+		srcID,
 		"new-type",
 		true,
 		"hourly",
@@ -115,7 +111,7 @@ func (s *DataTypeRepositoryTestSuite) TestCreate() {
 	s.NotEqual(uuid.Nil, created.ID())
 	expected := ingestion.NewDataTypeDirectly(
 		created.ID(),
-		found.ID(),
+		srcID,
 		"new-type",
 		true,
 		"hourly",
@@ -139,10 +135,8 @@ func (s *DataTypeRepositoryTestSuite) TestFindByID() {
 		{
 			name: "found",
 			setup: func() (uuid.UUID, *ingestion.DataType) {
-				s.seedDataSource()
-				src, err := s.sourceRepo.FindByName(ctx, "j-quants")
-				s.Require().NoError(err)
-				types, err := s.repo.ListBySourceID(ctx, src.ID())
+				srcID := s.seedDataSource()
+				types, err := s.repo.ListBySourceID(ctx, srcID)
 				s.Require().NoError(err)
 				s.Require().NotEmpty(types)
 				return types[0].ID(), types[0]
@@ -174,7 +168,7 @@ func (s *DataTypeRepositoryTestSuite) TestFindByID() {
 
 func (s *DataTypeRepositoryTestSuite) TestListBySourceID() {
 	ctx := context.Background()
-	s.seedDataSource()
+	srcID := s.seedDataSource()
 
 	now := time.Now()
 	anotherSource := &DataSource{
@@ -201,10 +195,7 @@ func (s *DataTypeRepositoryTestSuite) TestListBySourceID() {
 		UpdatedAt:           now,
 	}).Error)
 
-	src, err := s.sourceRepo.FindByName(ctx, "j-quants")
-	s.Require().NoError(err)
-
-	types, err := s.repo.ListBySourceID(ctx, src.ID())
+	types, err := s.repo.ListBySourceID(ctx, srcID)
 
 	s.Require().NoError(err)
 	s.Len(types, 2)
@@ -212,12 +203,9 @@ func (s *DataTypeRepositoryTestSuite) TestListBySourceID() {
 
 func (s *DataTypeRepositoryTestSuite) TestUpdate() {
 	ctx := context.Background()
-	s.seedDataSource()
+	srcID := s.seedDataSource()
 
-	src, err := s.sourceRepo.FindByName(ctx, "j-quants")
-	s.Require().NoError(err)
-
-	types, err := s.repo.ListBySourceID(ctx, src.ID())
+	types, err := s.repo.ListBySourceID(ctx, srcID)
 	s.Require().NoError(err)
 	s.Require().NotEmpty(types)
 	origDT := types[0]
@@ -260,12 +248,9 @@ func (s *DataTypeRepositoryTestSuite) TestUpdate() {
 
 func (s *DataTypeRepositoryTestSuite) TestDelete() {
 	ctx := context.Background()
-	s.seedDataSource()
+	srcID := s.seedDataSource()
 
-	src, err := s.sourceRepo.FindByName(ctx, "j-quants")
-	s.Require().NoError(err)
-
-	types, err := s.repo.ListBySourceID(ctx, src.ID())
+	types, err := s.repo.ListBySourceID(ctx, srcID)
 	s.Require().NoError(err)
 	s.Require().NotEmpty(types)
 	dtID := types[0].ID()

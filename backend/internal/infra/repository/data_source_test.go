@@ -55,7 +55,7 @@ func (s *DataSourceRepositoryTestSuite) TearDownTest() {
 	s.Require().NoError(s.CleanupMigrations())
 }
 
-func (s *DataSourceRepositoryTestSuite) seedDataSource() {
+func (s *DataSourceRepositoryTestSuite) seedDataSource() uuid.UUID {
 	now := time.Now()
 	source := &DataSource{
 		ID:        uuid.Must(uuid.NewV7()),
@@ -99,6 +99,7 @@ func (s *DataSourceRepositoryTestSuite) seedDataSource() {
 	for _, dt := range dataTypes {
 		s.Require().NoError(s.db.Create(dt).Error)
 	}
+	return source.ID
 }
 
 func (s *DataSourceRepositoryTestSuite) TestFindByID() {
@@ -111,12 +112,12 @@ func (s *DataSourceRepositoryTestSuite) TestFindByID() {
 		{
 			name: "found",
 			setup: func() (uuid.UUID, *ingestion.DataSource) {
-				s.seedDataSource()
+				id := s.seedDataSource()
 				anotherSrc, err := ingestion.NewDataSource("another-source", false, "UTC", map[string]any{})
 				s.Require().NoError(err)
 				_, err = s.repo.Create(ctx, anotherSrc)
 				s.Require().NoError(err)
-				found, err := s.repo.FindByName(ctx, "j-quants")
+				found, err := s.repo.FindByID(ctx, id)
 				s.Require().NoError(err)
 				s.Require().NotNil(found)
 				return found.ID(), found
@@ -142,59 +143,6 @@ func (s *DataSourceRepositoryTestSuite) TestFindByID() {
 			}
 			s.Require().NotNil(result)
 			s.True(cmp.Equal(*expected, *result, dataSrcCmpOpts...), cmp.Diff(*expected, *result, dataSrcCmpOpts...))
-		})
-	}
-}
-
-func (s *DataSourceRepositoryTestSuite) TestFindByName() {
-	ctx := context.Background()
-	tests := []struct {
-		name       string
-		seed       bool
-		extraSetup func()
-		query      string
-		wantNil    bool
-	}{
-		{
-			name: "found",
-			seed: true,
-			extraSetup: func() {
-				src, err := ingestion.NewDataSource("another-source", false, "UTC", map[string]any{})
-				s.Require().NoError(err)
-				_, err = s.repo.Create(ctx, src)
-				s.Require().NoError(err)
-			},
-			query:   "j-quants",
-			wantNil: false,
-		},
-		{name: "not found", seed: false, query: "nonexistent", wantNil: true},
-	}
-	for _, tt := range tests {
-		s.Run(tt.name, func() {
-			if tt.seed {
-				s.seedDataSource()
-			}
-			if tt.extraSetup != nil {
-				tt.extraSetup()
-			}
-			found, err := s.repo.FindByName(ctx, tt.query)
-			s.NoError(err)
-			if tt.wantNil {
-				s.Nil(found)
-				return
-			}
-			s.Require().NotNil(found)
-			loc, _ := time.LoadLocation("Asia/Tokyo")
-			expected := ingestion.NewDataSourceDirectly(
-				found.ID(),
-				"j-quants",
-				true,
-				loc,
-				map[string]any{"api_version": "v2"},
-				found.CreatedAt(),
-				found.UpdatedAt(),
-			)
-			s.True(cmp.Equal(*expected, *found, dataSrcCmpOpts...), cmp.Diff(*expected, *found, dataSrcCmpOpts...))
 		})
 	}
 }
@@ -242,7 +190,7 @@ func (s *DataSourceRepositoryTestSuite) TestList() {
 
 func (s *DataSourceRepositoryTestSuite) TestUpdate() {
 	ctx := context.Background()
-	s.seedDataSource()
+	seededID := s.seedDataSource()
 
 	// distractor: should remain unchanged after the update
 	anotherSrc, err := ingestion.NewDataSource("another-source", false, "UTC", map[string]any{})
@@ -250,7 +198,7 @@ func (s *DataSourceRepositoryTestSuite) TestUpdate() {
 	anotherCreated, err := s.repo.Create(ctx, anotherSrc)
 	s.Require().NoError(err)
 
-	found, err := s.repo.FindByName(ctx, "j-quants")
+	found, err := s.repo.FindByID(ctx, seededID)
 	s.Require().NoError(err)
 
 	s.Require().NoError(found.Update("j-quants-updated", false, "US/Eastern", map[string]any{"api_version": "v3"}))
@@ -280,7 +228,7 @@ func (s *DataSourceRepositoryTestSuite) TestUpdate() {
 
 func (s *DataSourceRepositoryTestSuite) TestDelete() {
 	ctx := context.Background()
-	s.seedDataSource()
+	seededID := s.seedDataSource()
 
 	// distractor: should survive the delete
 	anotherSrc, err := ingestion.NewDataSource("another-source", false, "UTC", map[string]any{})
@@ -288,7 +236,7 @@ func (s *DataSourceRepositoryTestSuite) TestDelete() {
 	anotherCreated, err := s.repo.Create(ctx, anotherSrc)
 	s.Require().NoError(err)
 
-	found, err := s.repo.FindByName(ctx, "j-quants")
+	found, err := s.repo.FindByID(ctx, seededID)
 	s.Require().NoError(err)
 
 	err = s.repo.Delete(ctx, found.ID())

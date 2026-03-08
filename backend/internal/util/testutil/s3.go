@@ -64,7 +64,9 @@ func (s *S3Test) setupDockerTest() error {
 			BaseEndpoint: &s.Endpoint,
 			Region:       TestS3Region,
 			Credentials: credentials.NewStaticCredentialsProvider(
-				TestS3AccessKey, TestS3SecretKey, "",
+				TestS3AccessKey,
+				TestS3SecretKey,
+				"",
 			),
 			UsePathStyle: true,
 		})
@@ -76,12 +78,13 @@ func (s *S3Test) setupDockerTest() error {
 		return fmt.Errorf("could not connect to SeaweedFS: %w", err)
 	}
 
-	// Create the test bucket
 	client := s3.New(s3.Options{
 		BaseEndpoint: &s.Endpoint,
 		Region:       TestS3Region,
 		Credentials: credentials.NewStaticCredentialsProvider(
-			TestS3AccessKey, TestS3SecretKey, "",
+			TestS3AccessKey,
+			TestS3SecretKey,
+			"",
 		),
 		UsePathStyle: true,
 	})

@@ -76,18 +76,6 @@ func (r *DataSourceRepository) FindByID(ctx context.Context, id uuid.UUID) (*ing
 	return dbSource.toEntity(), nil
 }
 
-func (r *DataSourceRepository) FindByName(ctx context.Context, name string) (*ingestion.DataSource, error) {
-	var dbSource DataSource
-	err := r.db.WithContext(ctx).Where("name = ?", name).First(&dbSource).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return dbSource.toEntity(), nil
-}
-
 func (r *DataSourceRepository) List(ctx context.Context) ([]*ingestion.DataSource, error) {
 	var dbSources []DataSource
 	if err := r.db.WithContext(ctx).Find(&dbSources).Error; err != nil {
