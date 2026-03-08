@@ -34,7 +34,8 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-go-conventions.sh",
-            "timeout": 180
+            "timeout": 180,
+            "async": true
           },
           {
             "type": "command",
@@ -49,7 +50,8 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-markdown-conventions.sh",
-            "timeout": 180
+            "timeout": 180,
+            "async": true
           }
         ]
       }
