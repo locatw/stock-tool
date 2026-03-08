@@ -26,6 +26,9 @@ type TailColumns struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
+// RawDB is the application's single entry point to the PostgreSQL database.
+// It owns the lifecycle of the underlying connection and exposes it to
+// infrastructure components that need direct SQL or GORM access.
 type RawDB struct {
 	db     *sql.DB
 	config Config
@@ -38,6 +41,10 @@ func NewRawDB(config Config) *RawDB {
 func (r *RawDB) Connect() error {
 	db, err := sql.Open("postgres", r.DSN())
 	if err != nil {
+		return err
+	}
+
+	if err := db.Ping(); err != nil {
 		return err
 	}
 
@@ -98,33 +105,14 @@ func (db *RawDB) DB() *sql.DB {
 	return db.db
 }
 
-type DB interface {
-	Transaction(fc func(tx DB) error, opts ...*sql.TxOptions) error
-	gorm() *gorm.DB
-}
-
-func CreateGormDB(db *sql.DB) (*gorm.DB, error) {
+func (r *RawDB) CreateGormDB() (*gorm.DB, error) {
 	return gorm.Open(
-		postgres.New(postgres.Config{Conn: db}),
+		postgres.New(postgres.Config{Conn: r.db}),
 		&gorm.Config{
 			NamingStrategy: schema.NamingStrategy{
-				TablePrefix: SchemaName + ".", // Use schema name as table prefix
+				TablePrefix: SchemaName + ".",
 			},
 		})
-}
-
-type postgresDB struct {
-	gormDB *gorm.DB
-}
-
-func (db *postgresDB) Transaction(fc func(tx DB) error, opts ...*sql.TxOptions) error {
-	return db.gormDB.Transaction(func(tx *gorm.DB) error {
-		return fc(&postgresDB{gormDB: tx})
-	}, opts...)
-}
-
-func (db *postgresDB) gorm() *gorm.DB {
-	return db.gormDB
 }
 
 type Config struct {
@@ -134,19 +122,4 @@ type Config struct {
 	Password string
 	DBName   string
 	SSLMode  bool
-}
-
-func Connect(config Config) (DB, error) {
-	rawDB := NewRawDB(config)
-	gormDB, err := gorm.Open(postgres.Open(rawDB.DSN()), &gorm.Config{
-		// TODO: same in CreateGormDB()
-		NamingStrategy: schema.NamingStrategy{
-			TablePrefix: SchemaName + ".", // Use schema name as table prefix
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &postgresDB{gormDB: gormDB}, nil
 }

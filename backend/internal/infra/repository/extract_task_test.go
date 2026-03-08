@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 
-	"stock-tool/database"
 	"stock-tool/internal/domain/extract"
 	"stock-tool/internal/util/testutil"
 )
@@ -47,7 +46,7 @@ func TestExtractTaskRepository(t *testing.T) {
 func (s *ExtractTaskRepositoryTestSuite) SetupTest() {
 	s.ApplyMigrations()
 
-	db, err := database.CreateGormDB(s.GetDB())
+	db, err := s.RawDB().CreateGormDB()
 	s.Require().NoError(err)
 
 	s.db = db

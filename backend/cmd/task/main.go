@@ -89,7 +89,7 @@ func main() {
 	})
 	do.Provide(injector, func(i *do.Injector) (*repository.ExtractTaskRepository, error) {
 		rawDB := do.MustInvoke[*database.RawDB](i)
-		db, err := database.CreateGormDB(rawDB.DB())
+		db, err := rawDB.CreateGormDB()
 		if err != nil {
 			return nil, fmt.Errorf("failed to create Gorm DB: %w", err)
 		}

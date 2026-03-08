@@ -71,7 +71,7 @@ func main() {
 
 	do.Provide(injector, func(i *do.Injector) (*repository.DataSourceRepository, error) {
 		rawDB := do.MustInvoke[*database.RawDB](i)
-		gormDB, err := database.CreateGormDB(rawDB.DB())
+		gormDB, err := rawDB.CreateGormDB()
 		if err != nil {
 			return nil, fmt.Errorf("failed to create Gorm DB: %w", err)
 		}
@@ -85,7 +85,7 @@ func main() {
 
 	do.Provide(injector, func(i *do.Injector) (*repository.DataTypeRepository, error) {
 		rawDB := do.MustInvoke[*database.RawDB](i)
-		gormDB, err := database.CreateGormDB(rawDB.DB())
+		gormDB, err := rawDB.CreateGormDB()
 		if err != nil {
 			return nil, fmt.Errorf("failed to create Gorm DB: %w", err)
 		}

@@ -11,7 +11,6 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
-	"stock-tool/database"
 	"stock-tool/internal/domain/ingestion"
 	"stock-tool/internal/util/testutil"
 )
@@ -33,7 +32,7 @@ func TestDataTypeRepository(t *testing.T) {
 func (s *DataTypeRepositoryTestSuite) SetupTest() {
 	s.ApplyMigrations()
 
-	db, err := database.CreateGormDB(s.GetDB())
+	db, err := s.RawDB().CreateGormDB()
 	s.Require().NoError(err)
 
 	s.db = db

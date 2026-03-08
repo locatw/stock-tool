@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 
-	"stock-tool/database"
 	"stock-tool/internal/domain/extract"
 	"stock-tool/internal/infra/repository"
 	"stock-tool/internal/infra/storage"
@@ -72,7 +71,7 @@ func (s *ExtractTaskUseCaseTestSuite) TearDownSuite() {
 func (s *ExtractTaskUseCaseTestSuite) SetupTest() {
 	s.ApplyMigrations()
 
-	db, err := database.CreateGormDB(s.GetDB())
+	db, err := s.RawDB().CreateGormDB()
 	s.Require().NoError(err)
 
 	s.db = db

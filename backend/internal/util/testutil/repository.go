@@ -3,8 +3,10 @@ package testutil
 import (
 	"database/sql"
 	"fmt"
+	"net"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -14,6 +16,8 @@ import (
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
 	"github.com/stretchr/testify/suite"
+
+	"stock-tool/database"
 )
 
 func migrationDir() string {
@@ -25,7 +29,7 @@ type DBTest struct {
 	suite.Suite
 	pool     *dockertest.Pool
 	resource *dockertest.Resource
-	db       *sql.DB
+	rawDB    *database.RawDB
 }
 
 func (s *DBTest) setupDockerTest() error {
@@ -68,23 +72,29 @@ func (s *DBTest) setupDockerTest() error {
 	}
 	s.resource = resource
 
-	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s/%s?sslmode=disable",
-		testDBUser,
-		testDBPassword,
-		s.resource.GetHostPort("5432/tcp"),
-		testDBName,
-	)
 	pool.MaxWait = 30 * time.Second
 	err = s.pool.Retry(func() error {
-		db, err := sql.Open("postgres", dsn)
+		host, portStr, err := net.SplitHostPort(s.resource.GetHostPort("5432/tcp"))
 		if err != nil {
 			return err
 		}
-
-		s.db = db
-
-		return s.db.Ping()
+		port, err := strconv.Atoi(portStr)
+		if err != nil {
+			return err
+		}
+		rawDB := database.NewRawDB(database.Config{
+			Host:     host,
+			Port:     port,
+			User:     testDBUser,
+			Password: testDBPassword,
+			DBName:   testDBName,
+			SSLMode:  false,
+		})
+		if err := rawDB.Connect(); err != nil {
+			return err
+		}
+		s.rawDB = rawDB
+		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("could not connect to database: %w", err)
@@ -108,7 +118,7 @@ func (s *DBTest) TearDownSuite() {
 }
 
 func (s *DBTest) ApplyMigrations() {
-	db := s.GetDB()
+	db := s.db()
 
 	_, err := db.Exec("CREATE SCHEMA IF NOT EXISTS stock")
 	s.Require().NoError(err)
@@ -125,7 +135,7 @@ func (s *DBTest) ApplyMigrations() {
 }
 
 func (s *DBTest) CleanupMigrations() error {
-	db := s.GetDB()
+	db := s.db()
 
 	driver, err := postgres.WithInstance(db, &postgres.Config{
 		SchemaName: "stock",
@@ -143,6 +153,10 @@ func (s *DBTest) CleanupMigrations() error {
 	return nil
 }
 
-func (s *DBTest) GetDB() *sql.DB {
-	return s.db
+func (s *DBTest) RawDB() *database.RawDB {
+	return s.rawDB
+}
+
+func (s *DBTest) db() *sql.DB {
+	return s.rawDB.DB()
 }
