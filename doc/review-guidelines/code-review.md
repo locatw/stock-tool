@@ -18,7 +18,7 @@ Check for violations of [doc/coding-guidelines/go/coding.md](../coding-guideline
 - Manual slice loops where `samber/lo` should be used (except DB operations).
 - Interfaces defined in the repository package (must be defined by the consumer).
 - Lines exceeding 120 columns.
-- Multi-line struct literals or function calls with multiple elements on the same line.
+- Multi-line struct literals, function calls, or function/method signatures with multiple elements on the same line.
 - Unnecessary intermediate variables before a return statement.
 - `=` instead of `:=` when declaring an error in a single-line if statement.
 - Redundant GORM tags that match default behavior.
