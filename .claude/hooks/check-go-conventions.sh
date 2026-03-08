@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+[[ "${CLAUDE_HOOK_RUNNING:-}" == "1" ]] && exit 0
+
 # Get changed .go files under backend/
 CHANGED_FILES=$(git diff --name-only HEAD -- 'backend/*.go' 'backend/**/*.go' 2>/dev/null || true)
 
@@ -67,7 +69,7 @@ If there are violations, list them concisely (file:line description) without out
   BATCH_TOTAL=$(( (TOTAL + BATCH_SIZE - 1) / BATCH_SIZE ))
   echo "Checking batch $BATCH_NUM/$BATCH_TOTAL (files $((i+1))-$((i+${#BATCH[@]})) of $TOTAL)..." >&2
 
-  OUTPUT=$(claude -p --output-format text "$PROMPT" 2>&1)
+  OUTPUT=$(CLAUDE_HOOK_RUNNING=1 claude -p --output-format text "$PROMPT" 2>&1)
 
   if ! echo "$OUTPUT" | grep -qx "PASS"; then
     ERRORS+="$OUTPUT"$'\n'
