@@ -1,3 +1,4 @@
 .env
 .vscode
 .claude/plans/
+.codex/review_result.md

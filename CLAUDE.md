@@ -17,4 +17,5 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [doc/coding-guidelines/go/coding.md](doc/coding-guidelines/go/coding.md) — Go coding conventions (when updating, also sync .claude/rules/go/coding.md)
 - [doc/coding-guidelines/go/testing.md](doc/coding-guidelines/go/testing.md) — Go testing conventions (when updating, also sync .claude/rules/go/testing.md)
 - [doc/coding-guidelines/markdown/style.md](doc/coding-guidelines/markdown/style.md) — Markdown formatting rules
+- [doc/review-guidelines/overview.md](doc/review-guidelines/overview.md) — Review guidelines (code, security, test coverage, architecture)
 - [doc/spec/](doc/spec/) — Specifications with use case scenarios
