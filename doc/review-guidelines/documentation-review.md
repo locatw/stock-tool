@@ -17,6 +17,7 @@ Apply these checks whenever a pull request modifies `.go`, `.sql`, `.yaml`, or `
 
 - Verify that file paths, package names, function names, and type names referenced in docs still exist in the codebase.
 - When a domain entity, repository method, or use case is added or renamed, check that related docs (architecture, project overview, proposals) reflect the change.
+- When a domain entity, use case method, or interface contract behavior changes, verify that the doc comment on the affected type or method is updated in the same PR.
 - When a public API surface is removed, confirm that docs no longer describe it as available.
 
 ### Missing or Renamed Files Listed in CLAUDE.md or AGENTS.md

@@ -16,7 +16,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [doc/development-guideline.md](doc/development-guideline.md) — Common commands, migration file creation, testing
 - [doc/documentation-guideline.md](doc/documentation-guideline.md) — Documentation policies and principles
 - [doc/coding-guidelines/go/coding.md](doc/coding-guidelines/go/coding.md) — Go coding conventions
+- [doc/coding-guidelines/go/doc-comments.md](doc/coding-guidelines/go/doc-comments.md) — Go doc comment conventions
 - [doc/coding-guidelines/go/testing.md](doc/coding-guidelines/go/testing.md) — Go testing conventions
 - [doc/coding-guidelines/markdown/style.md](doc/coding-guidelines/markdown/style.md) — Markdown formatting rules
 - [doc/review-guidelines/overview.md](doc/review-guidelines/overview.md) — Review guidelines (code, security, test coverage, architecture)
+- [doc/specification-guideline.md](doc/specification-guideline.md) — Where to write specifications (doc/spec/ vs code doc comments)
 - [doc/spec/](doc/spec/) — Specifications with use case scenarios

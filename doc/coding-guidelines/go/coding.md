@@ -21,6 +21,8 @@ Delete comments that don't provide additional context:
   func NewExtractTask(source, dataType, status string) *ExtractTask {
   ```
 
+For guidelines on what doc comments to write (domain rules, interface contracts, use case behavior), see [doc-comments.md](doc-comments.md).
+
 ## 3. Slice Operations
 
 Use `samber/lo` for slice transformations:

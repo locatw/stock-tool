@@ -16,6 +16,7 @@ The most critical rules (always follow even without reading the full document):
 - Anonymous functions: write on one line if the whole expression fits within 120 columns; otherwise expand normally
 - When a struct literal or function call spans multiple lines, each element on its own line
 - Delete comments that merely restate the type name or constructor purpose
+- Write doc comments on domain types, use case methods, and interfaces per `doc/coding-guidelines/go/doc-comments.md`
 - Do not define interfaces in the repository package — let consumers define them
 
 GORM models:
