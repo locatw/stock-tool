@@ -15,6 +15,8 @@ const (
 	ExecutionStatusFailed    ExecutionStatus = "failed"
 )
 
+// ExtractTask defines what to extract from a source: the combination of
+// source, data type, and timing that identifies a repeatable extraction job.
 type ExtractTask struct {
 	id        int
 	source    string
@@ -90,6 +92,9 @@ func (t *ExtractTask) Executions() []*ExtractTaskExecution {
 	return t.executions
 }
 
+// ExtractTaskExecution tracks a single run of data extraction.
+// Status transitions: running -> succeeded (via Succeed) or
+// running -> failed (via Fail). Terminal status must not change.
 type ExtractTaskExecution struct {
 	id             int
 	targetDateTime time.Time
@@ -196,6 +201,7 @@ func (t *ExtractTaskExecution) S3Files() []*ExtractedDataS3 {
 	return t.s3Files
 }
 
+// ExtractedDataS3 records the S3 object key of data produced by an extraction run.
 type ExtractedDataS3 struct {
 	id        int
 	key       string

@@ -21,11 +21,7 @@ Uses `samber/do` for service registration. Wiring happens in each `cmd/*/main.go
 
 ## Domain Model
 
-`ExtractTask` → has many `ExtractTaskExecution` → has many `ExtractedDataS3`
-
-- ExtractTask — Defines what to extract (source, dataType, timing)
-- ExtractTaskExecution — Tracks an individual run (status, timestamps, errors)
-- ExtractedDataS3 — Tracks output artifacts (S3 object keys)
+The extract domain follows a task → execution → output hierarchy. See the doc comments on each entity in `domain/extract/` for details.
 
 All domain entities are immutable with private fields and getter methods. Two constructor patterns:
 

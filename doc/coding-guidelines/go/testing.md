@@ -64,17 +64,17 @@ Rationale: catches integration bugs that pure mock tests miss (wrong column name
 
 ### When to Skip Tests
 
-Skip writing tests for functions or methods where **both** of the following apply:
+Skip writing tests for functions or methods where both of the following apply:
 
 - The implementation is trivially simple (direct field assignment, no branching logic)
 - The function is exercised frequently by other tests (e.g., constructors used in integration tests, getters called in assertions)
 
-Examples of functions that do **not** need dedicated tests:
+Examples of functions that do not need dedicated tests:
 
 - `NewXXX()` constructors that only assign arguments to fields and set timestamps
 - Getter methods that return a single private field
 
-Examples of functions that **do** need tests:
+Examples of functions that do need tests:
 
 - Helper methods with conversion logic (e.g., `StaleTimeout()` converting minutes to `time.Duration`)
 - Constructors with conditional logic or non-trivial defaults
@@ -111,7 +111,7 @@ s.True(cmp.Equal(expected, actual, opts...), cmp.Diff(expected, actual, opts...)
 
 Tests must include data that a buggy implementation would incorrectly return — distractor data. A test that passes with both a correct and a broken implementation proves nothing.
 
-**Rule:** When testing any operation that filters, scopes, or targets by an identifier, create at least one additional record that shares the same structure but belongs to a different scope. Then assert that only the expected records are returned / affected.
+When testing any operation that filters, scopes, or targets by an identifier, create at least one additional record that shares the same structure but belongs to a different scope. Then assert that only the expected records are returned / affected.
 
 ```go
 // Good — distractor source proves the WHERE clause works
@@ -133,9 +133,9 @@ s.Len(result, 1) // passes with SELECT * FROM data_types (no WHERE)
 
 When to add distractors:
 
-- **Filter / list queries** — another parent with its own children
-- **Find by unique key** — another record with a different key, to confirm the lookup does not just return the first row
-- **Delete / update by ID** — another record that must survive the operation unchanged; verify it still exists afterward
+- Filter / list queries — another parent with its own children
+- Find by unique key — another record with a different key, to confirm the lookup does not just return the first row
+- Delete / update by ID — another record that must survive the operation unchanged; verify it still exists afterward
 
 ## 2. Handler Tests
 

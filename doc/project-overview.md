@@ -6,17 +6,18 @@ Stock-tool is an investment support application:
 - Persists data in a local data store
 - Provides a foundation for analyzing stored data to inform investment decisions
 
-Current scope: J-Quants API for Japanese stock market data (brands, daily quotes), stored in PostgreSQL with extraction task and execution history tracking.
+Data sources and supported data types are configured at runtime; see the ingestion domain model for details.
 
 ## Entry Points
 
-Applications built with Cobra:
+Applications built with Cobra (see each `main.go` for available subcommands):
 
 - `backend/cmd/cli/` — Database initialization and migration management
-- `backend/cmd/task/` — Data extraction worker (`extract jquants` subcommand)
-- `backend/cmd/api/` — HTTP API server (Echo, health check endpoint)
+- `backend/cmd/task/` — Data extraction worker
+- `backend/cmd/api/` — HTTP API server
 
 ## External Services
 
-- J-Quants API — Source for Japanese stock market data (brands, daily quotes)
+- External data APIs — Configured as data sources at runtime
 - PostgreSQL — Primary data store (schema: `stock`)
+- S3-compatible object storage — Landing zone for extracted raw data

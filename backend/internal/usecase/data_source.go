@@ -11,11 +11,21 @@ import (
 	"github.com/samber/lo"
 )
 
+// DataSourceRepository provides persistence for DataSource entities.
 type DataSourceRepository interface {
+	// Create persists a new DataSource. Returns the created entity with server-assigned fields.
 	Create(ctx context.Context, src *ingestion.DataSource) (*ingestion.DataSource, error)
+
+	// FindByID returns the DataSource with the given ID, or (nil, nil) if not found.
 	FindByID(ctx context.Context, id uuid.UUID) (*ingestion.DataSource, error)
+
+	// List returns all DataSource entities.
 	List(ctx context.Context) ([]*ingestion.DataSource, error)
+
+	// Update persists changes to an existing DataSource.
 	Update(ctx context.Context, src *ingestion.DataSource) error
+
+	// Delete removes the DataSource with the given ID.
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
@@ -72,6 +82,7 @@ func NewDataSourceUseCase(repo DataSourceRepository) *DataSourceUseCase {
 	return &DataSourceUseCase{repo: repo}
 }
 
+// Create creates a new data source. Returns a ValidationError on invalid input.
 func (uc *DataSourceUseCase) Create(ctx context.Context, req *CreateDataSourceRequest) (*DataSourceResponse, error) {
 	ds, err := ingestion.NewDataSource(req.Name, req.Enabled, req.Timezone, req.Settings)
 	if err != nil {
@@ -84,6 +95,7 @@ func (uc *DataSourceUseCase) Create(ctx context.Context, req *CreateDataSourceRe
 	return newDataSourceResponse(created), nil
 }
 
+// Get retrieves a data source by ID. Returns (nil, nil) when not found.
 func (uc *DataSourceUseCase) Get(ctx context.Context, id uuid.UUID) (*DataSourceResponse, error) {
 	found, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
@@ -95,6 +107,7 @@ func (uc *DataSourceUseCase) Get(ctx context.Context, id uuid.UUID) (*DataSource
 	return newDataSourceResponse(found), nil
 }
 
+// List returns all data sources.
 func (uc *DataSourceUseCase) List(ctx context.Context) ([]*DataSourceResponse, error) {
 	sources, err := uc.repo.List(ctx)
 	if err != nil {
@@ -105,6 +118,8 @@ func (uc *DataSourceUseCase) List(ctx context.Context) ([]*DataSourceResponse, e
 	}), nil
 }
 
+// Update applies changes to an existing data source. Returns (nil, nil) when
+// not found, or a ValidationError on invalid input.
 func (uc *DataSourceUseCase) Update(ctx context.Context, req *UpdateDataSourceRequest) (*DataSourceResponse, error) {
 	existing, err := uc.repo.FindByID(ctx, req.ID)
 	if err != nil {
@@ -128,6 +143,7 @@ func (uc *DataSourceUseCase) Update(ctx context.Context, req *UpdateDataSourceRe
 	return newDataSourceResponse(result), nil
 }
 
+// Delete removes a data source by ID.
 func (uc *DataSourceUseCase) Delete(ctx context.Context, id uuid.UUID) error {
 	return uc.repo.Delete(ctx, id)
 }

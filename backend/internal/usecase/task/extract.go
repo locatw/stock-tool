@@ -8,28 +8,42 @@ import (
 	"stock-tool/internal/domain/extract"
 )
 
+// BrandDataFetcher fetches raw brand data from an external API.
 type BrandDataFetcher interface {
 	FetchBrands(ctx context.Context, code *string, date *time.Time) (rawBody []byte, err error)
 }
 
+// ObjectWriter writes data to object storage.
 type ObjectWriter interface {
 	PutObject(ctx context.Context, key string, data []byte) error
 }
 
+// ExtractTaskRepository provides persistence for extract task entities and their executions.
 type ExtractTaskRepository interface {
+	// Create persists a new ExtractTask.
 	Create(ctx context.Context, task *extract.ExtractTask) error
+
+	// FindBySourceAndDataType returns the task matching the given key,
+	// or (nil, nil) if not found.
 	FindBySourceAndDataType(
 		ctx context.Context,
 		source string,
 		dataType string,
 		timing string,
 	) (*extract.ExtractTask, error)
+
+	// CreateExecution persists a new execution under the given task.
+	// Returns the created execution with server-assigned fields.
 	CreateExecution(
 		ctx context.Context,
 		taskID int,
 		exec *extract.ExtractTaskExecution,
 	) (*extract.ExtractTaskExecution, error)
+
+	// UpdateExecution persists status changes to an existing execution.
 	UpdateExecution(ctx context.Context, exec *extract.ExtractTaskExecution) error
+
+	// CreateExtractedDataS3 persists an S3 file record under the given execution.
 	CreateExtractedDataS3(
 		ctx context.Context,
 		executionID int,
@@ -55,6 +69,20 @@ func NewExtractTaskUseCase(
 	}
 }
 
+// Extract fetches raw data from a source API and stores it in S3.
+//
+// Processing flow:
+//  1. Find or create ExtractTask for (source, dataType, timing)
+//  2. Create a running ExtractTaskExecution
+//  3. Fetch raw data from the source API
+//  4. Upload raw data to S3
+//  5. Record S3 key in ExtractedDataS3
+//  6. Mark execution as succeeded
+//
+// On failure at steps 3-5, the execution is marked as failed before
+// returning the error.
+//
+// See doc/spec/data-ingestion/usecase/ingest-data.md for requirements.
 func (uc *ExtractTaskUseCase) Extract(ctx context.Context, req *ExtractTaskRequest) (*ExtractTaskResponse, error) {
 	// 1. Find-or-create the ExtractTask
 	task, err := uc.findOrCreateTask(ctx, req.Source, req.DataType, req.Timing)

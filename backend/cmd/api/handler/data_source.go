@@ -10,6 +10,7 @@ import (
 	"github.com/samber/lo"
 )
 
+// DataSourceUseCase defines the operations the handler delegates to the usecase layer.
 type DataSourceUseCase interface {
 	Create(ctx context.Context, req *usecase.CreateDataSourceRequest) (*usecase.DataSourceResponse, error)
 	Get(ctx context.Context, id uuid.UUID) (*usecase.DataSourceResponse, error)

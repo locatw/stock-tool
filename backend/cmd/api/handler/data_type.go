@@ -11,6 +11,7 @@ import (
 	"github.com/samber/lo"
 )
 
+// DataTypeUseCase defines the operations the handler delegates to the usecase layer.
 type DataTypeUseCase interface {
 	Create(ctx context.Context, req *usecase.CreateDataTypeRequest) (*usecase.DataTypeResponse, error)
 	Get(ctx context.Context, id uuid.UUID) (*usecase.DataTypeResponse, error)

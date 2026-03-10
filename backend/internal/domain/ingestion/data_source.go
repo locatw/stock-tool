@@ -7,6 +7,9 @@ import (
 	"github.com/google/uuid"
 )
 
+// DataSource represents an external data provider from which stock data
+// is ingested. Timezone must be a valid IANA location; NewDataSource
+// validates on creation and Update re-validates on mutation.
 type DataSource struct {
 	id        uuid.UUID
 	name      string

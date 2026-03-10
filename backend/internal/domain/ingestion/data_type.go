@@ -6,6 +6,9 @@ import (
 	"github.com/google/uuid"
 )
 
+// DataType represents a category of data belonging to a DataSource.
+// It holds ingestion configuration: update frequency, fetch timing,
+// backfill policy, and stale timeout.
 type DataType struct {
 	id                  uuid.UUID
 	dataSourceID        uuid.UUID
