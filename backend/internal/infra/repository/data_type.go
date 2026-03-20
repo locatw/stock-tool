@@ -48,7 +48,10 @@ type scheduleJSON struct {
 
 func (s scheduleJSON) toEntity() ingestion.Schedule {
 	times := lo.Map(s.Times, func(t string, _ int) ingestion.TimeOfDay { return ingestion.TimeOfDay(t) })
-	schedule, _ := ingestion.NewDailySchedule(times)
+	schedule, err := ingestion.NewDailySchedule(times)
+	if err != nil {
+		panic("repository: corrupt schedule in database: " + err.Error())
+	}
 	return schedule
 }
 
