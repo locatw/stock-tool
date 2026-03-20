@@ -1,9 +1,12 @@
 package ingestion
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
+
+	"stock-tool/internal/util/idp"
 
 	"github.com/google/uuid"
 )
@@ -25,14 +28,20 @@ type DataSource struct {
 	updatedAt time.Time
 }
 
-func NewDataSource(name string, enabled bool, timezone string, settings map[string]any) (*DataSource, error) {
+func NewDataSource(
+	ctx context.Context,
+	name string,
+	enabled bool,
+	timezone string,
+	settings map[string]any,
+) (*DataSource, error) {
 	loc, err := time.LoadLocation(timezone)
 	if err != nil {
 		return nil, fmt.Errorf("invalid timezone: %s", timezone)
 	}
 	now := time.Now()
 	return &DataSource{
-		id:        uuid.Must(uuid.NewV7()),
+		id:        idp.NewV7(ctx),
 		name:      name,
 		enabled:   enabled,
 		timezone:  loc,

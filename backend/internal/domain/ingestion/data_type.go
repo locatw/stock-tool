@@ -1,8 +1,11 @@
 package ingestion
 
 import (
+	"context"
 	"errors"
 	"time"
+
+	"stock-tool/internal/util/idp"
 
 	"github.com/google/uuid"
 )
@@ -28,6 +31,7 @@ type DataType struct {
 }
 
 func NewDataType(
+	ctx context.Context,
 	dataSourceID uuid.UUID,
 	name string,
 	enabled bool,
@@ -38,7 +42,7 @@ func NewDataType(
 ) *DataType {
 	now := time.Now()
 	return &DataType{
-		id:                  uuid.Must(uuid.NewV7()),
+		id:                  idp.NewV7(ctx),
 		dataSourceID:        dataSourceID,
 		name:                name,
 		enabled:             enabled,

@@ -102,6 +102,7 @@ func (uc *DataTypeUseCase) Create(ctx context.Context, req *CreateDataTypeReques
 	}
 
 	entity := ingestion.NewDataType(
+		ctx,
 		req.DataSourceID,
 		req.Name,
 		req.Enabled,

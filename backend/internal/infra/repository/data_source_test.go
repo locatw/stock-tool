@@ -14,6 +14,7 @@ import (
 	"gorm.io/gorm"
 
 	"stock-tool/internal/domain/ingestion"
+	"stock-tool/internal/util/idp"
 	"stock-tool/internal/util/testutil"
 )
 
@@ -27,6 +28,9 @@ var dataSrcCmpOpts = cmp.Options{
 			return false
 		}
 		return a.String() == b.String()
+	}),
+	cmp.Comparer(func(a, b time.Time) bool {
+		return a.Round(time.Microsecond).Equal(b.Round(time.Microsecond))
 	}),
 }
 
@@ -109,15 +113,12 @@ func (s *DataSourceRepositoryTestSuite) TestFindByID() {
 		{
 			name: "found",
 			setup: func() (uuid.UUID, *ingestion.DataSource) {
-				id := s.seedDataSource()
-				anotherSrc, err := ingestion.NewDataSource("another-source", false, "UTC", map[string]any{})
+				s.seedDataSource()
+				src, err := ingestion.NewDataSource(ctx, "another-source", false, "UTC", map[string]any{})
 				s.Require().NoError(err)
-				_, err = s.repo.Create(ctx, anotherSrc)
+				_, err = s.repo.Create(ctx, src)
 				s.Require().NoError(err)
-				found, err := s.repo.FindByID(ctx, id)
-				s.Require().NoError(err)
-				s.Require().NotNil(found)
-				return found.ID(), found
+				return src.ID(), src
 			},
 			wantNil: false,
 		},
@@ -145,17 +146,17 @@ func (s *DataSourceRepositoryTestSuite) TestFindByID() {
 }
 
 func (s *DataSourceRepositoryTestSuite) TestCreate() {
-	ctx := context.Background()
+	fixedID := uuid.MustParse("01961f1a-89c4-7641-b052-4dca477a457a")
+	ctx := idp.WithFixedID(context.Background(), fixedID)
 
-	src, err := ingestion.NewDataSource("test-source", true, "UTC", map[string]any{"key": "val"})
+	src, err := ingestion.NewDataSource(ctx, "test-source", true, "UTC", map[string]any{"key": "val"})
 	s.Require().NoError(err)
 	created, err := s.repo.Create(ctx, src)
 
 	s.Require().NoError(err)
-	s.NotEqual(uuid.Nil, created.ID())
 	loc, _ := time.LoadLocation("UTC")
 	expected := ingestion.NewDataSourceDirectly(
-		created.ID(),
+		fixedID,
 		"test-source",
 		true,
 		loc,
@@ -171,7 +172,7 @@ func (s *DataSourceRepositoryTestSuite) TestList() {
 	s.seedDataSource()
 
 	// Create a second source
-	src, err := ingestion.NewDataSource("another-source", false, "US/Eastern", map[string]any{})
+	src, err := ingestion.NewDataSource(ctx, "another-source", false, "US/Eastern", map[string]any{})
 	s.Require().NoError(err)
 	_, err = s.repo.Create(ctx, src)
 	s.Require().NoError(err)
@@ -190,7 +191,7 @@ func (s *DataSourceRepositoryTestSuite) TestUpdate() {
 	seededID := s.seedDataSource()
 
 	// distractor: should remain unchanged after the update
-	anotherSrc, err := ingestion.NewDataSource("another-source", false, "UTC", map[string]any{})
+	anotherSrc, err := ingestion.NewDataSource(ctx, "another-source", false, "UTC", map[string]any{})
 	s.Require().NoError(err)
 	anotherCreated, err := s.repo.Create(ctx, anotherSrc)
 	s.Require().NoError(err)
@@ -228,7 +229,7 @@ func (s *DataSourceRepositoryTestSuite) TestDelete() {
 	seededID := s.seedDataSource()
 
 	// distractor: should survive the delete
-	anotherSrc, err := ingestion.NewDataSource("another-source", false, "UTC", map[string]any{})
+	anotherSrc, err := ingestion.NewDataSource(ctx, "another-source", false, "UTC", map[string]any{})
 	s.Require().NoError(err)
 	anotherCreated, err := s.repo.Create(ctx, anotherSrc)
 	s.Require().NoError(err)

@@ -1,6 +1,7 @@
 package ingestion
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -23,13 +24,14 @@ func (s *DataTypeTestSuite) mustDailySchedule(times ...TimeOfDay) Schedule {
 }
 
 func (s *DataTypeTestSuite) TestStaleTimeout() {
-	dt := NewDataType(uuid.Nil, "test", true, s.mustDailySchedule("09:00"), false, 30, nil)
+	dt := NewDataType(context.Background(), uuid.Nil, "test", true, s.mustDailySchedule("09:00"), false, 30, nil)
 
 	s.Equal(30*time.Minute, dt.StaleTimeout())
 }
 
 func (s *DataTypeTestSuite) TestUpdate() {
 	dt := NewDataType(
+		context.Background(),
 		uuid.Nil, "original", true,
 		s.mustDailySchedule("18:00"),
 		true, 30, map[string]any{"k": "v"},

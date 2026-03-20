@@ -12,6 +12,7 @@ import (
 	"gorm.io/gorm"
 
 	"stock-tool/internal/domain/ingestion"
+	"stock-tool/internal/util/idp"
 	"stock-tool/internal/util/testutil"
 )
 
@@ -94,10 +95,12 @@ func (s *DataTypeRepositoryTestSuite) seedDataSource() uuid.UUID {
 }
 
 func (s *DataTypeRepositoryTestSuite) TestCreate() {
-	ctx := context.Background()
+	fixedID := uuid.MustParse("01961f1a-89c4-7641-b052-4dca477a457a")
+	ctx := idp.WithFixedID(context.Background(), fixedID)
 	srcID := s.seedDataSource()
 
 	dt := ingestion.NewDataType(
+		ctx,
 		srcID,
 		"new-type",
 		true,
@@ -109,9 +112,8 @@ func (s *DataTypeRepositoryTestSuite) TestCreate() {
 	created, err := s.repo.Create(ctx, dt)
 
 	s.Require().NoError(err)
-	s.NotEqual(uuid.Nil, created.ID())
 	expected := ingestion.NewDataTypeDirectly(
-		created.ID(),
+		fixedID,
 		srcID,
 		"new-type",
 		true,

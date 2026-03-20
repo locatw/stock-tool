@@ -85,7 +85,7 @@ func NewDataSourceUseCase(repo DataSourceRepository) *DataSourceUseCase {
 
 // Create creates a new data source. Returns a ValidationError on invalid input.
 func (uc *DataSourceUseCase) Create(ctx context.Context, req *CreateDataSourceRequest) (*DataSourceResponse, error) {
-	ds, err := ingestion.NewDataSource(req.Name, req.Enabled, req.Timezone, req.Settings)
+	ds, err := ingestion.NewDataSource(ctx, req.Name, req.Enabled, req.Timezone, req.Settings)
 	if err != nil {
 		return nil, &ValidationError{Message: err.Error()}
 	}
