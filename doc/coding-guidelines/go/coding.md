@@ -337,3 +337,50 @@ Concrete cases in this codebase:
   duplicate Docker container lifecycle code per suite.
 - Do not extract test fixture construction into helpers; keep struct literals inline in each
   test method to preserve readability and self-containedness.
+
+## 13. Domain Object Validation
+
+Constructors and mutation methods in the domain layer must validate their arguments and return an error if any value is invalid.
+
+Apply this rule to:
+
+- `New*` constructor functions that accept externally-supplied values (e.g., user input, API requests)
+- Mutation methods such as `Update` that accept new values for domain fields
+
+```go
+// Good — validate on construction
+func NewDataSource(name string, timezone string) (*DataSource, error) {
+    loc, err := time.LoadLocation(timezone)
+    if err != nil {
+        return nil, fmt.Errorf("invalid timezone: %s", timezone)
+    }
+    return &DataSource{name: name, timezone: loc}, nil
+}
+
+// Good — validate on mutation
+func (s *DataSource) Update(name string, timezone string) error {
+    loc, err := time.LoadLocation(timezone)
+    if err != nil {
+        return fmt.Errorf("invalid timezone: %s", timezone)
+    }
+    s.name = name
+    s.timezone = loc
+    return nil
+}
+
+// Bad — no validation
+func NewDataSource(name string, timezone string) *DataSource {
+    loc, _ := time.LoadLocation(timezone)
+    return &DataSource{name: name, timezone: loc}
+}
+```
+
+Use a separate `New*Directly` constructor to bypass validation when reconstructing objects from persisted data (e.g., database rows), where values are guaranteed valid:
+
+```go
+// New*Directly is for internal use only — called from repository layer to
+// reconstruct domain objects from persisted data without re-validating.
+func NewDataSourceDirectly(id uuid.UUID, name string, timezone *time.Location) *DataSource {
+    return &DataSource{id: id, name: name, timezone: timezone}
+}
+```

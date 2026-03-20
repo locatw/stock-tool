@@ -20,6 +20,11 @@ func (s *FooTestSuite) TestBar() {
 }
 ```
 
+Each test suite must target a single type.
+Name the suite after the type (e.g., `FooTestSuite` for type `Foo`).
+Name test methods after the function or method under test, omitting the type name prefix
+(e.g., `TestNew` inside `FooTestSuite`, not `TestNewFoo`).
+
 ### Parameterized Tests
 
 When testing a single function or method with multiple cases, use a single test method with table-driven subtests:

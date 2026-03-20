@@ -22,3 +22,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [doc/review-guidelines/overview.md](doc/review-guidelines/overview.md) — Review guidelines (code, security, test coverage, architecture)
 - [doc/specification-guideline.md](doc/specification-guideline.md) — Where to write specifications (doc/spec/ vs code doc comments)
 - [doc/spec/](doc/spec/) — Specifications with use case scenarios
+
+## Common Commands
+
+Stop hooks automatically run linting, API code generation, and tests when relevant files change.
+Do NOT run `make lint`, `make lint-api`, `make gen-api`, or `make test` manually — they are handled by hooks.
+
+If manual execution is needed (e.g., debugging a hook failure), all `make` targets must be run from the project root:
+
+| Command | Description |
+|---|---|
+| `make gen-api` | Bundle OpenAPI spec and regenerate Go code |
+| `make lint` | Run golangci-lint |
+| `make lint-fix` | Run golangci-lint with auto-fix |
+| `make lint-api` | Run Redocly lint on OpenAPI spec |
+| `make test` | Run all Go tests |
