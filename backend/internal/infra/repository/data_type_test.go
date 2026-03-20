@@ -212,6 +212,7 @@ func (s *DataTypeRepositoryTestSuite) TestUpdate() {
 	origDT := types[0]
 
 	origDT.Update(
+		ctx,
 		"daily-quotes-updated",
 		false,
 		s.mustSchedule(ingestion.NewDailySchedule([]ingestion.TimeOfDay{"06:00", "14:00"})),

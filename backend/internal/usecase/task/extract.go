@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"stock-tool/internal/domain/extract"
+	"stock-tool/internal/util/clock"
 )
 
 // BrandDataFetcher fetches raw brand data from an external API.
@@ -91,8 +92,8 @@ func (uc *ExtractTaskUseCase) Extract(ctx context.Context, req *ExtractTaskReque
 	}
 
 	// 2. Create a running execution
-	now := time.Now()
-	execution := extract.NewRunningExecution(now)
+	now := clock.Now(ctx)
+	execution := extract.NewRunningExecution(ctx, now)
 	execution, err = uc.repo.CreateExecution(ctx, task.ID(), execution)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create execution: %w", err)
@@ -101,7 +102,7 @@ func (uc *ExtractTaskUseCase) Extract(ctx context.Context, req *ExtractTaskReque
 	// 3. Fetch raw data from API
 	rawBody, err := uc.fetchRawData(ctx, req)
 	if err != nil {
-		execution.Fail(err.Error())
+		execution.Fail(ctx, err.Error())
 		if updateErr := uc.repo.UpdateExecution(ctx, execution); updateErr != nil {
 			return nil, fmt.Errorf(
 				"failed to update execution status after error: %w (original: %w)",
@@ -115,7 +116,7 @@ func (uc *ExtractTaskUseCase) Extract(ctx context.Context, req *ExtractTaskReque
 	s3Key := extract.GenerateS3Key(req.Source, req.DataType, now, "json")
 	if err := uc.objectWriter.PutObject(ctx, s3Key, rawBody); err != nil {
 		err = fmt.Errorf("failed to upload to S3: %w", err)
-		execution.Fail(err.Error())
+		execution.Fail(ctx, err.Error())
 		if updateErr := uc.repo.UpdateExecution(ctx, execution); updateErr != nil {
 			return nil, fmt.Errorf(
 				"failed to update execution status after error: %w (original: %w)",
@@ -126,15 +127,15 @@ func (uc *ExtractTaskUseCase) Extract(ctx context.Context, req *ExtractTaskReque
 	}
 
 	// 5. Record S3 file in DB
-	s3File := extract.NewExtractedDataS3(s3Key)
+	s3File := extract.NewExtractedDataS3(ctx, s3Key)
 	if _, err := uc.repo.CreateExtractedDataS3(ctx, execution.ID(), s3File); err != nil {
-		execution.Fail(fmt.Sprintf("failed to record S3 file: %s", err.Error()))
+		execution.Fail(ctx, fmt.Sprintf("failed to record S3 file: %s", err.Error()))
 		_ = uc.repo.UpdateExecution(ctx, execution)
 		return nil, fmt.Errorf("failed to record S3 file: %w", err)
 	}
 
 	// 6. Mark execution as succeeded
-	execution.Succeed()
+	execution.Succeed(ctx)
 	if err := uc.repo.UpdateExecution(ctx, execution); err != nil {
 		return nil, fmt.Errorf("failed to update execution status: %w", err)
 	}
@@ -159,7 +160,7 @@ func (uc *ExtractTaskUseCase) findOrCreateTask(
 		return task, nil
 	}
 
-	newTask := extract.NewExtractTask(source, dataType, timing)
+	newTask := extract.NewExtractTask(ctx, source, dataType, timing)
 	if err := uc.repo.Create(ctx, newTask); err != nil {
 		return nil, fmt.Errorf("failed to create extract task: %w", err)
 	}

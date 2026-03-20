@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"stock-tool/internal/util/clock"
 	"stock-tool/internal/util/idp"
 
 	"github.com/google/uuid"
@@ -40,7 +41,7 @@ func NewDataType(
 	staleTimeoutMinutes int,
 	settings map[string]any,
 ) *DataType {
-	now := time.Now()
+	now := clock.Now(ctx)
 	return &DataType{
 		id:                  idp.NewV7(ctx),
 		dataSourceID:        dataSourceID,
@@ -93,6 +94,7 @@ func (t *DataType) CreatedAt() time.Time     { return t.createdAt }
 func (t *DataType) UpdatedAt() time.Time     { return t.updatedAt }
 
 func (t *DataType) Update(
+	ctx context.Context,
 	name string,
 	enabled bool,
 	schedule Schedule,
@@ -106,7 +108,7 @@ func (t *DataType) Update(
 	t.backfillEnabled = backfillEnabled
 	t.staleTimeoutMinutes = staleTimeoutMinutes
 	t.settings = settings
-	t.updatedAt = time.Now()
+	t.updatedAt = clock.Now(ctx)
 }
 
 func (t *DataType) StaleTimeout() time.Duration {

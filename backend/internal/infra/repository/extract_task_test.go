@@ -61,10 +61,10 @@ func (s *ExtractTaskRepositoryTestSuite) TestCreate() {
 	ctx := context.Background()
 	targetDateTime := time.Now().UTC().Add(-24 * time.Hour).Truncate(time.Microsecond)
 
-	s3File := extract.NewExtractedDataS3("path/to/key.csv")
-	exec := extract.NewRunningExecution(targetDateTime)
+	s3File := extract.NewExtractedDataS3(ctx, "path/to/key.csv")
+	exec := extract.NewRunningExecution(ctx, targetDateTime)
 	exec.AddS3File(s3File)
-	task := extract.NewExtractTask("j-quants", "daily-quotes", "daily")
+	task := extract.NewExtractTask(ctx, "j-quants", "daily-quotes", "daily")
 	task.AddExecution(exec)
 
 	err := s.repo.Create(ctx, task)
@@ -108,11 +108,11 @@ func (s *ExtractTaskRepositoryTestSuite) TestCreate() {
 func (s *ExtractTaskRepositoryTestSuite) TestFindBySourceAndDataType_Found() {
 	ctx := context.Background()
 
-	task := extract.NewExtractTask("jquants", "brand", "daily")
+	task := extract.NewExtractTask(ctx, "jquants", "brand", "daily")
 	s.Require().NoError(s.repo.Create(ctx, task))
 
 	// distractor: same source/type but different timing
-	distractor := extract.NewExtractTask("jquants", "brand", "weekly")
+	distractor := extract.NewExtractTask(ctx, "jquants", "brand", "weekly")
 	s.Require().NoError(s.repo.Create(ctx, distractor))
 
 	found, err := s.repo.FindBySourceAndDataType(ctx, "jquants", "brand", "daily")
@@ -136,14 +136,14 @@ func (s *ExtractTaskRepositoryTestSuite) TestFindBySourceAndDataType_NotFound() 
 func (s *ExtractTaskRepositoryTestSuite) TestCreateExecution() {
 	ctx := context.Background()
 
-	task := extract.NewExtractTask("jquants", "brand", "daily")
+	task := extract.NewExtractTask(ctx, "jquants", "brand", "daily")
 	s.Require().NoError(s.repo.Create(ctx, task))
 
 	found, err := s.repo.FindBySourceAndDataType(ctx, "jquants", "brand", "daily")
 	s.Require().NoError(err)
 
 	targetDateTime := time.Now().UTC().Truncate(time.Microsecond)
-	exec := extract.NewRunningExecution(targetDateTime)
+	exec := extract.NewRunningExecution(ctx, targetDateTime)
 
 	created, err := s.repo.CreateExecution(ctx, found.ID(), exec)
 
@@ -157,19 +157,19 @@ func (s *ExtractTaskRepositoryTestSuite) TestCreateExecution() {
 func (s *ExtractTaskRepositoryTestSuite) TestUpdateExecution() {
 	ctx := context.Background()
 
-	task := extract.NewExtractTask("jquants", "brand", "daily")
+	task := extract.NewExtractTask(ctx, "jquants", "brand", "daily")
 	s.Require().NoError(s.repo.Create(ctx, task))
 
 	found, err := s.repo.FindBySourceAndDataType(ctx, "jquants", "brand", "daily")
 	s.Require().NoError(err)
 
 	targetDateTime := time.Now().UTC().Truncate(time.Microsecond)
-	exec := extract.NewRunningExecution(targetDateTime)
+	exec := extract.NewRunningExecution(ctx, targetDateTime)
 	created, err := s.repo.CreateExecution(ctx, found.ID(), exec)
 	s.Require().NoError(err)
 
 	// distractor: a second execution that should not be affected
-	exec2, err := s.repo.CreateExecution(ctx, found.ID(), extract.NewRunningExecution(targetDateTime.Add(time.Hour)))
+	exec2, err := s.repo.CreateExecution(ctx, found.ID(), extract.NewRunningExecution(ctx, targetDateTime.Add(time.Hour)))
 	s.Require().NoError(err)
 
 	// Reconstruct the entity to simulate the domain transition
@@ -184,7 +184,7 @@ func (s *ExtractTaskRepositoryTestSuite) TestUpdateExecution() {
 		created.UpdatedAt(),
 		[]*extract.ExtractedDataS3{},
 	)
-	reconstructed.Succeed()
+	reconstructed.Succeed(ctx)
 
 	err = s.repo.UpdateExecution(ctx, reconstructed)
 
@@ -205,18 +205,18 @@ func (s *ExtractTaskRepositoryTestSuite) TestUpdateExecution() {
 func (s *ExtractTaskRepositoryTestSuite) TestCreateExtractedDataS3() {
 	ctx := context.Background()
 
-	task := extract.NewExtractTask("jquants", "brand", "daily")
+	task := extract.NewExtractTask(ctx, "jquants", "brand", "daily")
 	s.Require().NoError(s.repo.Create(ctx, task))
 
 	found, err := s.repo.FindBySourceAndDataType(ctx, "jquants", "brand", "daily")
 	s.Require().NoError(err)
 
 	targetDateTime := time.Now().UTC().Truncate(time.Microsecond)
-	exec := extract.NewRunningExecution(targetDateTime)
+	exec := extract.NewRunningExecution(ctx, targetDateTime)
 	created, err := s.repo.CreateExecution(ctx, found.ID(), exec)
 	s.Require().NoError(err)
 
-	s3File := extract.NewExtractedDataS3("landing/jquants/brand/2025/06/01/data.json")
+	s3File := extract.NewExtractedDataS3(ctx, "landing/jquants/brand/2025/06/01/data.json")
 	s3Created, err := s.repo.CreateExtractedDataS3(ctx, created.ID(), s3File)
 
 	s.NoError(err)

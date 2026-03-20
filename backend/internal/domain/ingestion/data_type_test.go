@@ -37,7 +37,9 @@ func (s *DataTypeTestSuite) TestUpdate() {
 		true, 30, map[string]any{"k": "v"},
 	)
 
+	ctx := context.Background()
 	dt.Update(
+		ctx,
 		"renamed", false,
 		s.mustDailySchedule("09:00", "15:00"),
 		false, 60, map[string]any{},

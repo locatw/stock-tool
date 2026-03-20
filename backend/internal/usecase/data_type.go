@@ -161,6 +161,7 @@ func (uc *DataTypeUseCase) Update(ctx context.Context, req *UpdateDataTypeReques
 	}
 
 	existing.Update(
+		ctx,
 		req.Name,
 		req.Enabled,
 		schedule,

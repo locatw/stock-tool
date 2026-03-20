@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"stock-tool/internal/util/clock"
 	"stock-tool/internal/util/idp"
 
 	"github.com/google/uuid"
@@ -39,7 +40,7 @@ func NewDataSource(
 	if err != nil {
 		return nil, fmt.Errorf("invalid timezone: %s", timezone)
 	}
-	now := time.Now()
+	now := clock.Now(ctx)
 	return &DataSource{
 		id:        idp.NewV7(ctx),
 		name:      name,
@@ -71,7 +72,13 @@ func NewDataSourceDirectly(
 	}
 }
 
-func (s *DataSource) Update(name string, enabled bool, timezone string, settings map[string]any) error {
+func (s *DataSource) Update(
+	ctx context.Context,
+	name string,
+	enabled bool,
+	timezone string,
+	settings map[string]any,
+) error {
 	loc, err := time.LoadLocation(timezone)
 	if err != nil {
 		return fmt.Errorf("invalid timezone: %s", timezone)
@@ -80,7 +87,7 @@ func (s *DataSource) Update(name string, enabled bool, timezone string, settings
 	s.enabled = enabled
 	s.timezone = loc
 	s.settings = settings
-	s.updatedAt = time.Now()
+	s.updatedAt = clock.Now(ctx)
 	return nil
 }
 

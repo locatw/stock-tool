@@ -199,7 +199,7 @@ func (s *DataSourceRepositoryTestSuite) TestUpdate() {
 	found, err := s.repo.FindByID(ctx, seededID)
 	s.Require().NoError(err)
 
-	s.Require().NoError(found.Update("j-quants-updated", false, "US/Eastern", map[string]any{"api_version": "v3"}))
+	s.Require().NoError(found.Update(ctx, "j-quants-updated", false, "US/Eastern", map[string]any{"api_version": "v3"}))
 	err = s.repo.Update(ctx, found)
 	s.Require().NoError(err)
 

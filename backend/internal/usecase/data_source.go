@@ -133,7 +133,7 @@ func (uc *DataSourceUseCase) Update(ctx context.Context, req *UpdateDataSourceRe
 		return nil, nil
 	}
 
-	if err := existing.Update(req.Name, req.Enabled, req.Timezone, req.Settings); err != nil {
+	if err := existing.Update(ctx, req.Name, req.Enabled, req.Timezone, req.Settings); err != nil {
 		return nil, &ValidationError{Message: err.Error()}
 	}
 	if err := uc.repo.Update(ctx, existing); err != nil {

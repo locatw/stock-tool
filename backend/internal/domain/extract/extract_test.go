@@ -1,6 +1,7 @@
 package extract
 
 import (
+	"context"
 	"regexp"
 	"testing"
 	"time"
@@ -63,7 +64,7 @@ func (s *ExtractTestSuite) TestGenerateS3Key() {
 func (s *ExtractTestSuite) TestNewRunningExecution() {
 	targetDateTime := time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)
 
-	exec := NewRunningExecution(targetDateTime)
+	exec := NewRunningExecution(context.Background(), targetDateTime)
 
 	s.Equal(ExecutionStatusRunning, exec.Status())
 	s.Equal(targetDateTime, exec.TargetDateTime())
@@ -74,9 +75,10 @@ func (s *ExtractTestSuite) TestNewRunningExecution() {
 }
 
 func (s *ExtractTestSuite) TestSucceed() {
-	exec := NewRunningExecution(time.Now())
+	ctx := context.Background()
+	exec := NewRunningExecution(ctx, time.Now())
 
-	exec.Succeed()
+	exec.Succeed(ctx)
 
 	s.Equal(ExecutionStatusSucceeded, exec.Status())
 	s.NotNil(exec.FinishedAt())
@@ -84,9 +86,10 @@ func (s *ExtractTestSuite) TestSucceed() {
 }
 
 func (s *ExtractTestSuite) TestFail() {
-	exec := NewRunningExecution(time.Now())
+	ctx := context.Background()
+	exec := NewRunningExecution(ctx, time.Now())
 
-	exec.Fail("connection timeout")
+	exec.Fail(ctx, "connection timeout")
 
 	s.Equal(ExecutionStatusFailed, exec.Status())
 	s.NotNil(exec.FinishedAt())

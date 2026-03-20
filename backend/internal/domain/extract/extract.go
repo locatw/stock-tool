@@ -1,8 +1,11 @@
 package extract
 
 import (
+	"context"
 	"fmt"
 	"time"
+
+	"stock-tool/internal/util/clock"
 
 	"github.com/google/uuid"
 )
@@ -28,8 +31,8 @@ type ExtractTask struct {
 	executions []*ExtractTaskExecution
 }
 
-func NewExtractTask(source string, dataType string, timing string) *ExtractTask {
-	now := time.Now()
+func NewExtractTask(ctx context.Context, source string, dataType string, timing string) *ExtractTask {
+	now := clock.Now(ctx)
 	return &ExtractTask{
 		source:     source,
 		dataType:   dataType,
@@ -108,8 +111,8 @@ type ExtractTaskExecution struct {
 	s3Files []*ExtractedDataS3
 }
 
-func NewRunningExecution(targetDateTime time.Time) *ExtractTaskExecution {
-	now := time.Now()
+func NewRunningExecution(ctx context.Context, targetDateTime time.Time) *ExtractTaskExecution {
+	now := clock.Now(ctx)
 	return &ExtractTaskExecution{
 		targetDateTime: targetDateTime,
 		status:         ExecutionStatusRunning,
@@ -146,15 +149,15 @@ func NewExtractTaskExecutionDirectly(
 	}
 }
 
-func (t *ExtractTaskExecution) Succeed() {
-	now := time.Now()
+func (t *ExtractTaskExecution) Succeed(ctx context.Context) {
+	now := clock.Now(ctx)
 	t.status = ExecutionStatusSucceeded
 	t.finishedAt = &now
 	t.updatedAt = now
 }
 
-func (t *ExtractTaskExecution) Fail(errorInfo string) {
-	now := time.Now()
+func (t *ExtractTaskExecution) Fail(ctx context.Context, errorInfo string) {
+	now := clock.Now(ctx)
 	t.status = ExecutionStatusFailed
 	t.errorInfo = &errorInfo
 	t.finishedAt = &now
@@ -209,8 +212,8 @@ type ExtractedDataS3 struct {
 	updatedAt time.Time
 }
 
-func NewExtractedDataS3(key string) *ExtractedDataS3 {
-	now := time.Now()
+func NewExtractedDataS3(ctx context.Context, key string) *ExtractedDataS3 {
+	now := clock.Now(ctx)
 	return &ExtractedDataS3{
 		key:       key,
 		createdAt: now,
