@@ -31,6 +31,8 @@ components:
       $ref: './schemas/DataSource.yaml'
     DataType:
       $ref: './schemas/DataType.yaml'
+    Schedule:
+      $ref: './schemas/Schedule.yaml'
     ErrorResponse:
       $ref: './schemas/ErrorResponse.yaml'
     CreateDataSourceRequest:

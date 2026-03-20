@@ -7,15 +7,14 @@ import (
 )
 
 // DataType represents a category of data belonging to a DataSource.
-// It holds ingestion configuration: update frequency, fetch timing,
-// backfill policy, and stale timeout.
+// It holds ingestion configuration: update schedule, backfill policy,
+// and stale timeout.
 type DataType struct {
 	id                  uuid.UUID
 	dataSourceID        uuid.UUID
 	name                string
 	enabled             bool
-	updateFrequency     string
-	updateTimes         []string
+	schedule            Schedule
 	backfillEnabled     bool
 	staleTimeoutMinutes int
 	settings            map[string]any
@@ -27,8 +26,7 @@ func NewDataType(
 	dataSourceID uuid.UUID,
 	name string,
 	enabled bool,
-	updateFrequency string,
-	updateTimes []string,
+	schedule Schedule,
 	backfillEnabled bool,
 	staleTimeoutMinutes int,
 	settings map[string]any,
@@ -39,8 +37,7 @@ func NewDataType(
 		dataSourceID:        dataSourceID,
 		name:                name,
 		enabled:             enabled,
-		updateFrequency:     updateFrequency,
-		updateTimes:         updateTimes,
+		schedule:            schedule,
 		backfillEnabled:     backfillEnabled,
 		staleTimeoutMinutes: staleTimeoutMinutes,
 		settings:            settings,
@@ -54,8 +51,7 @@ func NewDataTypeDirectly(
 	dataSourceID uuid.UUID,
 	name string,
 	enabled bool,
-	updateFrequency string,
-	updateTimes []string,
+	schedule Schedule,
 	backfillEnabled bool,
 	staleTimeoutMinutes int,
 	settings map[string]any,
@@ -67,8 +63,7 @@ func NewDataTypeDirectly(
 		dataSourceID:        dataSourceID,
 		name:                name,
 		enabled:             enabled,
-		updateFrequency:     updateFrequency,
-		updateTimes:         updateTimes,
+		schedule:            schedule,
 		backfillEnabled:     backfillEnabled,
 		staleTimeoutMinutes: staleTimeoutMinutes,
 		settings:            settings,
@@ -81,8 +76,7 @@ func (t *DataType) ID() uuid.UUID            { return t.id }
 func (t *DataType) DataSourceID() uuid.UUID  { return t.dataSourceID }
 func (t *DataType) Name() string             { return t.name }
 func (t *DataType) Enabled() bool            { return t.enabled }
-func (t *DataType) UpdateFrequency() string  { return t.updateFrequency }
-func (t *DataType) UpdateTimes() []string    { return t.updateTimes }
+func (t *DataType) Schedule() Schedule       { return t.schedule }
 func (t *DataType) BackfillEnabled() bool    { return t.backfillEnabled }
 func (t *DataType) StaleTimeoutMinutes() int { return t.staleTimeoutMinutes }
 func (t *DataType) Settings() map[string]any { return t.settings }
@@ -92,16 +86,14 @@ func (t *DataType) UpdatedAt() time.Time     { return t.updatedAt }
 func (t *DataType) Update(
 	name string,
 	enabled bool,
-	updateFrequency string,
-	updateTimes []string,
+	schedule Schedule,
 	backfillEnabled bool,
 	staleTimeoutMinutes int,
 	settings map[string]any,
 ) {
 	t.name = name
 	t.enabled = enabled
-	t.updateFrequency = updateFrequency
-	t.updateTimes = updateTimes
+	t.schedule = schedule
 	t.backfillEnabled = backfillEnabled
 	t.staleTimeoutMinutes = staleTimeoutMinutes
 	t.settings = settings

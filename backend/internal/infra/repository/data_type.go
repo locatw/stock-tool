@@ -18,8 +18,7 @@ type DataType struct {
 	DataSourceID        uuid.UUID `gorm:"type:uuid"`
 	Name                string
 	Enabled             bool
-	UpdateFrequency     string
-	UpdateTimes         datatypes.JSONType[[]string]
+	Schedule            datatypes.JSONType[scheduleJSON]
 	BackfillEnabled     bool
 	StaleTimeoutMinutes int
 	Settings            datatypes.JSONType[map[string]any]
@@ -33,8 +32,7 @@ func (m *DataType) toEntity() *ingestion.DataType {
 		m.DataSourceID,
 		m.Name,
 		m.Enabled,
-		m.UpdateFrequency,
-		m.UpdateTimes.Data(),
+		m.Schedule.Data().toEntity(),
 		m.BackfillEnabled,
 		m.StaleTimeoutMinutes,
 		m.Settings.Data(),
@@ -43,14 +41,31 @@ func (m *DataType) toEntity() *ingestion.DataType {
 	)
 }
 
+type scheduleJSON struct {
+	Type  string   `json:"type"`
+	Times []string `json:"times,omitempty"`
+}
+
+func (s scheduleJSON) toEntity() ingestion.Schedule {
+	times := lo.Map(s.Times, func(t string, _ int) ingestion.TimeOfDay { return ingestion.TimeOfDay(t) })
+	schedule, _ := ingestion.NewDailySchedule(times)
+	return schedule
+}
+
+func toScheduleJSON(s ingestion.Schedule) scheduleJSON {
+	return scheduleJSON{
+		Type:  string(ingestion.ScheduleTypeDaily),
+		Times: lo.Map(s.Times(), func(t ingestion.TimeOfDay, _ int) string { return string(t) }),
+	}
+}
+
 func toDataTypeDBModel(e *ingestion.DataType) *DataType {
 	return &DataType{
 		ID:                  e.ID(),
 		DataSourceID:        e.DataSourceID(),
 		Name:                e.Name(),
 		Enabled:             e.Enabled(),
-		UpdateFrequency:     e.UpdateFrequency(),
-		UpdateTimes:         datatypes.NewJSONType(e.UpdateTimes()),
+		Schedule:            datatypes.NewJSONType(toScheduleJSON(e.Schedule())),
 		BackfillEnabled:     e.BackfillEnabled(),
 		StaleTimeoutMinutes: e.StaleTimeoutMinutes(),
 		Settings:            datatypes.NewJSONType(e.Settings()),
@@ -106,8 +121,7 @@ func (r *DataTypeRepository) Update(ctx context.Context, dt *ingestion.DataType)
 		Updates(map[string]any{
 			"name":                  dt.Name(),
 			"enabled":               dt.Enabled(),
-			"update_frequency":      dt.UpdateFrequency(),
-			"update_times":          datatypes.NewJSONType(dt.UpdateTimes()),
+			"schedule":              datatypes.NewJSONType(toScheduleJSON(dt.Schedule())),
 			"backfill_enabled":      dt.BackfillEnabled(),
 			"stale_timeout_minutes": dt.StaleTimeoutMinutes(),
 			"settings":              datatypes.NewJSONType(dt.Settings()),

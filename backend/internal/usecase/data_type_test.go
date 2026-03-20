@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 
+	"stock-tool/internal/domain/ingestion"
 	"stock-tool/internal/infra/repository"
 	"stock-tool/internal/util/testutil"
 )
@@ -44,9 +45,18 @@ func (s *DataTypeUseCaseTestSuite) TearDownTest() {
 	s.Require().NoError(s.CleanupMigrations())
 }
 
+var dataTypeResponseCmpOpts = []cmp.Option{
+	cmpopts.IgnoreFields(DataTypeResponse{}, "ID", "DataSourceID", "CreatedAt", "UpdatedAt"),
+	cmp.AllowUnexported(ingestion.Schedule{}),
+}
+
+func (s *DataTypeUseCaseTestSuite) mustSchedule(sched ingestion.Schedule, err error) ingestion.Schedule {
+	s.Require().NoError(err)
+	return sched
+}
+
 func (s *DataTypeUseCaseTestSuite) TestCreate() {
 	ctx := context.Background()
-	cmpOpts := []cmp.Option{cmpopts.IgnoreFields(DataTypeResponse{}, "ID", "DataSourceID", "CreatedAt", "UpdatedAt")}
 
 	type testCase struct {
 		name        string
@@ -73,8 +83,7 @@ func (s *DataTypeUseCaseTestSuite) TestCreate() {
 					DataSourceID:        id,
 					Name:                "daily-quotes",
 					Enabled:             true,
-					UpdateFrequency:     "daily",
-					UpdateTimes:         []string{"18:00"},
+					Schedule:            ScheduleInput{Type: "daily", Times: []string{"18:00"}},
 					BackfillEnabled:     true,
 					StaleTimeoutMinutes: 30,
 					Settings:            map[string]any{},
@@ -83,24 +92,22 @@ func (s *DataTypeUseCaseTestSuite) TestCreate() {
 			expected: &DataTypeResponse{
 				Name:                "daily-quotes",
 				Enabled:             true,
-				UpdateFrequency:     "daily",
-				UpdateTimes:         []string{"18:00"},
+				Schedule:            s.mustSchedule(ingestion.NewDailySchedule([]ingestion.TimeOfDay{"18:00"})),
 				BackfillEnabled:     true,
 				StaleTimeoutMinutes: 30,
 				Settings:            map[string]any{},
 			},
 		},
 		{
-			name:  "invalid frequency",
+			name:  "invalid schedule type",
 			setup: func() uuid.UUID { return uuid.Must(uuid.NewV7()) },
 			req: func(id uuid.UUID) *CreateDataTypeRequest {
 				return &CreateDataTypeRequest{
-					DataSourceID:    id,
-					Name:            "dt",
-					Enabled:         true,
-					UpdateFrequency: "biweekly",
-					UpdateTimes:     []string{},
-					Settings:        map[string]any{},
+					DataSourceID: id,
+					Name:         "dt",
+					Enabled:      true,
+					Schedule:     ScheduleInput{Type: ""},
+					Settings:     map[string]any{},
 				}
 			},
 			expectErrAs: &ValidationError{},
@@ -116,14 +123,13 @@ func (s *DataTypeUseCaseTestSuite) TestCreate() {
 				return
 			}
 			s.Require().NoError(err)
-			s.True(cmp.Equal(tc.expected, resp, cmpOpts...), cmp.Diff(tc.expected, resp, cmpOpts...))
+			s.True(cmp.Equal(tc.expected, resp, dataTypeResponseCmpOpts...), cmp.Diff(tc.expected, resp, dataTypeResponseCmpOpts...))
 		})
 	}
 }
 
 func (s *DataTypeUseCaseTestSuite) TestGet() {
 	ctx := context.Background()
-	cmpOpts := []cmp.Option{cmpopts.IgnoreFields(DataTypeResponse{}, "ID", "DataSourceID", "CreatedAt", "UpdatedAt")}
 
 	type testCase struct {
 		name     string
@@ -142,31 +148,28 @@ func (s *DataTypeUseCaseTestSuite) TestGet() {
 				})
 				s.Require().NoError(err)
 				_, err = s.dtUC.Create(ctx, &CreateDataTypeRequest{
-					DataSourceID:    src.ID,
-					Name:            "dt-other",
-					Enabled:         false,
-					UpdateFrequency: "weekly",
-					UpdateTimes:     []string{},
-					Settings:        map[string]any{},
+					DataSourceID: src.ID,
+					Name:         "dt-other",
+					Enabled:      false,
+					Schedule:     ScheduleInput{Type: "daily", Times: []string{"09:00", "12:00"}},
+					Settings:     map[string]any{},
 				})
 				s.Require().NoError(err)
 				dt, err := s.dtUC.Create(ctx, &CreateDataTypeRequest{
-					DataSourceID:    src.ID,
-					Name:            "dt",
-					Enabled:         true,
-					UpdateFrequency: "daily",
-					UpdateTimes:     []string{},
-					Settings:        map[string]any{},
+					DataSourceID: src.ID,
+					Name:         "dt",
+					Enabled:      true,
+					Schedule:     ScheduleInput{Type: "daily", Times: []string{"18:00"}},
+					Settings:     map[string]any{},
 				})
 				s.Require().NoError(err)
 				return dt.ID
 			},
 			expected: &DataTypeResponse{
-				Name:            "dt",
-				Enabled:         true,
-				UpdateFrequency: "daily",
-				UpdateTimes:     []string{},
-				Settings:        map[string]any{},
+				Name:     "dt",
+				Enabled:  true,
+				Schedule: s.mustSchedule(ingestion.NewDailySchedule([]ingestion.TimeOfDay{"18:00"})),
+				Settings: map[string]any{},
 			},
 		},
 		{
@@ -185,17 +188,17 @@ func (s *DataTypeUseCaseTestSuite) TestGet() {
 				return
 			}
 			s.Require().NotNil(resp)
-			s.True(cmp.Equal(tc.expected, resp, cmpOpts...), cmp.Diff(tc.expected, resp, cmpOpts...))
+			s.True(cmp.Equal(tc.expected, resp, dataTypeResponseCmpOpts...), cmp.Diff(tc.expected, resp, dataTypeResponseCmpOpts...))
 		})
 	}
 }
 
 func (s *DataTypeUseCaseTestSuite) TestListDataTypes() {
 	ctx := context.Background()
-	cmpOpts := []cmp.Option{
-		cmpopts.IgnoreFields(DataTypeResponse{}, "ID", "DataSourceID", "CreatedAt", "UpdatedAt"),
+	cmpOpts := append(
+		dataTypeResponseCmpOpts,
 		cmpopts.SortSlices(func(a, b *DataTypeResponse) bool { return a.Name < b.Name }),
-	}
+	)
 
 	src1, err := s.dsUC.Create(ctx, &CreateDataSourceRequest{
 		Name:     "src1",
@@ -213,30 +216,27 @@ func (s *DataTypeUseCaseTestSuite) TestListDataTypes() {
 	s.Require().NoError(err)
 
 	_, err = s.dtUC.Create(ctx, &CreateDataTypeRequest{
-		DataSourceID:    src1.ID,
-		Name:            "dt1",
-		Enabled:         true,
-		UpdateFrequency: "daily",
-		UpdateTimes:     []string{},
-		Settings:        map[string]any{},
+		DataSourceID: src1.ID,
+		Name:         "dt1",
+		Enabled:      true,
+		Schedule:     ScheduleInput{Type: "daily", Times: []string{"18:00"}},
+		Settings:     map[string]any{},
 	})
 	s.Require().NoError(err)
 	_, err = s.dtUC.Create(ctx, &CreateDataTypeRequest{
-		DataSourceID:    src1.ID,
-		Name:            "dt2",
-		Enabled:         false,
-		UpdateFrequency: "weekly",
-		UpdateTimes:     []string{"09:00"},
-		Settings:        map[string]any{},
+		DataSourceID: src1.ID,
+		Name:         "dt2",
+		Enabled:      false,
+		Schedule:     ScheduleInput{Type: "daily", Times: []string{"09:00", "12:00"}},
+		Settings:     map[string]any{},
 	})
 	s.Require().NoError(err)
 	_, err = s.dtUC.Create(ctx, &CreateDataTypeRequest{
-		DataSourceID:    src2.ID,
-		Name:            "dt3",
-		Enabled:         true,
-		UpdateFrequency: "daily",
-		UpdateTimes:     []string{},
-		Settings:        map[string]any{},
+		DataSourceID: src2.ID,
+		Name:         "dt3",
+		Enabled:      true,
+		Schedule:     ScheduleInput{Type: "daily", Times: []string{"12:00"}},
+		Settings:     map[string]any{},
 	})
 	s.Require().NoError(err)
 
@@ -244,15 +244,14 @@ func (s *DataTypeUseCaseTestSuite) TestListDataTypes() {
 
 	s.Require().NoError(err)
 	expected := []*DataTypeResponse{
-		{Name: "dt1", Enabled: true, UpdateFrequency: "daily", UpdateTimes: []string{}, Settings: map[string]any{}},
-		{Name: "dt2", Enabled: false, UpdateFrequency: "weekly", UpdateTimes: []string{"09:00"}, Settings: map[string]any{}},
+		{Name: "dt1", Enabled: true, Schedule: s.mustSchedule(ingestion.NewDailySchedule([]ingestion.TimeOfDay{"18:00"})), Settings: map[string]any{}},
+		{Name: "dt2", Enabled: false, Schedule: s.mustSchedule(ingestion.NewDailySchedule([]ingestion.TimeOfDay{"09:00", "12:00"})), Settings: map[string]any{}},
 	}
 	s.True(cmp.Equal(expected, list, cmpOpts...), cmp.Diff(expected, list, cmpOpts...))
 }
 
 func (s *DataTypeUseCaseTestSuite) TestUpdate() {
 	ctx := context.Background()
-	cmpOpts := []cmp.Option{cmpopts.IgnoreFields(DataTypeResponse{}, "ID", "DataSourceID", "CreatedAt", "UpdatedAt")}
 
 	type testCase struct {
 		name        string
@@ -275,42 +274,38 @@ func (s *DataTypeUseCaseTestSuite) TestUpdate() {
 				})
 				s.Require().NoError(err)
 				dtOther, err := s.dtUC.Create(ctx, &CreateDataTypeRequest{
-					DataSourceID:    src.ID,
-					Name:            "dt-other",
-					Enabled:         false,
-					UpdateFrequency: "weekly",
-					UpdateTimes:     []string{},
-					Settings:        map[string]any{},
+					DataSourceID: src.ID,
+					Name:         "dt-other",
+					Enabled:      false,
+					Schedule:     ScheduleInput{Type: "daily", Times: []string{"09:00", "12:00"}},
+					Settings:     map[string]any{},
 				})
 				s.Require().NoError(err)
 				dtOtherID = dtOther.ID
 				dt, err := s.dtUC.Create(ctx, &CreateDataTypeRequest{
-					DataSourceID:    src.ID,
-					Name:            "dt",
-					Enabled:         true,
-					UpdateFrequency: "daily",
-					UpdateTimes:     []string{"18:00"},
-					Settings:        map[string]any{},
+					DataSourceID: src.ID,
+					Name:         "dt",
+					Enabled:      true,
+					Schedule:     ScheduleInput{Type: "daily", Times: []string{"18:00"}},
+					Settings:     map[string]any{},
 				})
 				s.Require().NoError(err)
 				return dt.ID
 			},
 			req: func(id uuid.UUID) *UpdateDataTypeRequest {
 				return &UpdateDataTypeRequest{
-					ID:              id,
-					Name:            "dt-updated",
-					Enabled:         false,
-					UpdateFrequency: "weekly",
-					UpdateTimes:     []string{"09:00"},
-					Settings:        map[string]any{"x": "y"},
+					ID:       id,
+					Name:     "dt-updated",
+					Enabled:  false,
+					Schedule: ScheduleInput{Type: "daily", Times: []string{"09:00", "15:00"}},
+					Settings: map[string]any{"x": "y"},
 				}
 			},
 			expected: &DataTypeResponse{
-				Name:            "dt-updated",
-				Enabled:         false,
-				UpdateFrequency: "weekly",
-				UpdateTimes:     []string{"09:00"},
-				Settings:        map[string]any{"x": "y"},
+				Name:     "dt-updated",
+				Enabled:  false,
+				Schedule: s.mustSchedule(ingestion.NewDailySchedule([]ingestion.TimeOfDay{"09:00", "15:00"})),
+				Settings: map[string]any{"x": "y"},
 			},
 			postCheck: func() {
 				resp, err := s.dtUC.Get(ctx, dtOtherID)
@@ -324,25 +319,23 @@ func (s *DataTypeUseCaseTestSuite) TestUpdate() {
 			setup: func() uuid.UUID { return uuid.Must(uuid.NewV7()) },
 			req: func(id uuid.UUID) *UpdateDataTypeRequest {
 				return &UpdateDataTypeRequest{
-					ID:              id,
-					Name:            "x",
-					UpdateFrequency: "daily",
-					UpdateTimes:     []string{},
-					Settings:        map[string]any{},
+					ID:       id,
+					Name:     "x",
+					Schedule: ScheduleInput{Type: "daily", Times: []string{"09:00"}},
+					Settings: map[string]any{},
 				}
 			},
 			expected: nil,
 		},
 		{
-			name:  "invalid frequency",
+			name:  "invalid schedule",
 			setup: func() uuid.UUID { return uuid.Must(uuid.NewV7()) },
 			req: func(id uuid.UUID) *UpdateDataTypeRequest {
 				return &UpdateDataTypeRequest{
-					ID:              id,
-					Name:            "x",
-					UpdateFrequency: "biweekly",
-					UpdateTimes:     []string{},
-					Settings:        map[string]any{},
+					ID:       id,
+					Name:     "x",
+					Schedule: ScheduleInput{Type: ""},
+					Settings: map[string]any{},
 				}
 			},
 			expectErrAs: &ValidationError{},
@@ -363,7 +356,7 @@ func (s *DataTypeUseCaseTestSuite) TestUpdate() {
 				return
 			}
 			s.Require().NotNil(resp)
-			s.True(cmp.Equal(tc.expected, resp, cmpOpts...), cmp.Diff(tc.expected, resp, cmpOpts...))
+			s.True(cmp.Equal(tc.expected, resp, dataTypeResponseCmpOpts...), cmp.Diff(tc.expected, resp, dataTypeResponseCmpOpts...))
 			if tc.postCheck != nil {
 				tc.postCheck()
 			}
@@ -382,21 +375,19 @@ func (s *DataTypeUseCaseTestSuite) TestDeleteDataType() {
 	})
 	s.Require().NoError(err)
 	dtOther, err := s.dtUC.Create(ctx, &CreateDataTypeRequest{
-		DataSourceID:    src.ID,
-		Name:            "dt-other",
-		Enabled:         false,
-		UpdateFrequency: "weekly",
-		UpdateTimes:     []string{},
-		Settings:        map[string]any{},
+		DataSourceID: src.ID,
+		Name:         "dt-other",
+		Enabled:      false,
+		Schedule:     ScheduleInput{Type: "daily", Times: []string{"09:00", "12:00"}},
+		Settings:     map[string]any{},
 	})
 	s.Require().NoError(err)
 	dt, err := s.dtUC.Create(ctx, &CreateDataTypeRequest{
-		DataSourceID:    src.ID,
-		Name:            "dt",
-		Enabled:         true,
-		UpdateFrequency: "daily",
-		UpdateTimes:     []string{},
-		Settings:        map[string]any{},
+		DataSourceID: src.ID,
+		Name:         "dt",
+		Enabled:      true,
+		Schedule:     ScheduleInput{Type: "daily", Times: []string{"18:00"}},
+		Settings:     map[string]any{},
 	})
 	s.Require().NoError(err)
 

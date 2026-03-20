@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	api "stock-tool/api/gen"
+	"stock-tool/internal/domain/ingestion"
 	"stock-tool/internal/usecase"
 
 	"github.com/google/uuid"
@@ -45,11 +46,13 @@ func (h *DataTypeHandler) CreateDataType(
 	request api.CreateDataTypeRequestObject,
 ) (api.CreateDataTypeResponseObject, error) {
 	resp, err := h.uc.Create(ctx, &usecase.CreateDataTypeRequest{
-		DataSourceID:        request.Body.DataSourceId,
-		Name:                request.Body.Name,
-		Enabled:             request.Body.Enabled,
-		UpdateFrequency:     string(request.Body.UpdateFrequency),
-		UpdateTimes:         request.Body.UpdateTimes,
+		DataSourceID: request.Body.DataSourceId,
+		Name:         request.Body.Name,
+		Enabled:      request.Body.Enabled,
+		Schedule: usecase.ScheduleInput{
+			Type:  string(request.Body.Schedule.Type),
+			Times: lo.FromPtr(request.Body.Schedule.Times),
+		},
 		BackfillEnabled:     request.Body.BackfillEnabled,
 		StaleTimeoutMinutes: request.Body.StaleTimeoutMinutes,
 		Settings:            request.Body.Settings,
@@ -80,11 +83,13 @@ func (h *DataTypeHandler) UpdateDataType(
 	ctx context.Context, request api.UpdateDataTypeRequestObject,
 ) (api.UpdateDataTypeResponseObject, error) {
 	resp, err := h.uc.Update(ctx, &usecase.UpdateDataTypeRequest{
-		ID:                  request.Id,
-		Name:                request.Body.Name,
-		Enabled:             request.Body.Enabled,
-		UpdateFrequency:     string(request.Body.UpdateFrequency),
-		UpdateTimes:         request.Body.UpdateTimes,
+		ID:      request.Id,
+		Name:    request.Body.Name,
+		Enabled: request.Body.Enabled,
+		Schedule: usecase.ScheduleInput{
+			Type:  string(request.Body.Schedule.Type),
+			Times: lo.FromPtr(request.Body.Schedule.Times),
+		},
 		BackfillEnabled:     request.Body.BackfillEnabled,
 		StaleTimeoutMinutes: request.Body.StaleTimeoutMinutes,
 		Settings:            request.Body.Settings,
@@ -116,12 +121,16 @@ func toDataTypeResponse(r *usecase.DataTypeResponse) api.DataType {
 		DataSourceId:        r.DataSourceID,
 		Name:                r.Name,
 		Enabled:             r.Enabled,
-		UpdateFrequency:     api.DataTypeUpdateFrequency(r.UpdateFrequency),
-		UpdateTimes:         r.UpdateTimes,
+		Schedule:            toScheduleAPI(r.Schedule),
 		BackfillEnabled:     r.BackfillEnabled,
 		StaleTimeoutMinutes: r.StaleTimeoutMinutes,
 		Settings:            r.Settings,
 		CreatedAt:           r.CreatedAt,
 		UpdatedAt:           r.UpdatedAt,
 	}
+}
+
+func toScheduleAPI(s ingestion.Schedule) api.Schedule {
+	times := lo.Map(s.Times(), func(t ingestion.TimeOfDay, _ int) string { return string(t) })
+	return api.Schedule{Type: api.Daily, Times: &times}
 }

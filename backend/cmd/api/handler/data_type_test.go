@@ -6,6 +6,7 @@ import (
 	"time"
 
 	api "stock-tool/api/gen"
+	"stock-tool/internal/domain/ingestion"
 	"stock-tool/internal/usecase"
 
 	"github.com/google/go-cmp/cmp"
@@ -82,6 +83,11 @@ func (s *DataTypeHandlerTestSuite) SetupTest() {
 	s.handler = &DataTypeHandler{uc: s.ucMock}
 }
 
+func (s *DataTypeHandlerTestSuite) mustSchedule(sched ingestion.Schedule, err error) ingestion.Schedule {
+	s.Require().NoError(err)
+	return sched
+}
+
 func (s *DataTypeHandlerTestSuite) TestListDataTypes() {
 	now := time.Now()
 	dsID := uuid.Must(uuid.NewV7())
@@ -89,7 +95,7 @@ func (s *DataTypeHandlerTestSuite) TestListDataTypes() {
 	s.ucMock.On("List", mock.Anything, dsID).Return([]*usecase.DataTypeResponse{
 		{
 			ID: dtID, DataSourceID: dsID, Name: "dt1", Enabled: true,
-			UpdateFrequency: "daily", UpdateTimes: []string{},
+			Schedule: s.mustSchedule(ingestion.NewDailySchedule([]ingestion.TimeOfDay{"18:00"})),
 			Settings: map[string]any{}, CreatedAt: now, UpdatedAt: now,
 		},
 	}, nil)
@@ -98,10 +104,11 @@ func (s *DataTypeHandlerTestSuite) TestListDataTypes() {
 		Params: api.ListDataTypesParams{DataSourceId: lo.ToPtr(dsID)},
 	})
 
+	times := []string{"18:00"}
 	expected := api.ListDataTypes200JSONResponse{
 		{
 			Id: dtID, DataSourceId: dsID, Name: "dt1", Enabled: true,
-			UpdateFrequency: "daily", UpdateTimes: []string{},
+			Schedule: api.Schedule{Type: api.Daily, Times: &times},
 			Settings: map[string]any{}, CreatedAt: now, UpdatedAt: now,
 		},
 	}
@@ -115,25 +122,30 @@ func (s *DataTypeHandlerTestSuite) TestCreateDataType_Success() {
 	dsID := uuid.Must(uuid.NewV7())
 	dtID := uuid.Must(uuid.NewV7())
 	expectedReq := &usecase.CreateDataTypeRequest{
-		DataSourceID: dsID, Name: "dt", Enabled: true, UpdateFrequency: "daily",
-		UpdateTimes: []string{"18:00"}, Settings: map[string]any{},
+		DataSourceID: dsID, Name: "dt", Enabled: true,
+		Schedule: usecase.ScheduleInput{Type: "daily", Times: []string{"18:00"}},
+		Settings: map[string]any{},
 	}
+	sched := s.mustSchedule(ingestion.NewDailySchedule([]ingestion.TimeOfDay{"18:00"}))
 	s.ucMock.On("Create", mock.Anything, expectedReq).Return(
 		&usecase.DataTypeResponse{
 			ID: dtID, DataSourceID: dsID, Name: "dt", Enabled: true,
-			UpdateFrequency: "daily", UpdateTimes: []string{"18:00"},
+			Schedule: sched,
 			Settings: map[string]any{}, CreatedAt: now, UpdatedAt: now,
 		}, nil)
 
+	times := []string{"18:00"}
 	body := &api.CreateDataTypeRequest{
-		DataSourceId: dsID, Name: "dt", Enabled: true, UpdateFrequency: "daily",
-		UpdateTimes: []string{"18:00"}, Settings: map[string]any{},
+		DataSourceId: dsID, Name: "dt", Enabled: true,
+		Schedule: api.Schedule{Type: api.Daily, Times: &times},
+		Settings: map[string]any{},
 	}
 	resp, err := s.handler.CreateDataType(context.Background(), api.CreateDataTypeRequestObject{Body: body})
 
+	expectedTimes := []string{"18:00"}
 	expected := api.CreateDataType201JSONResponse{
 		Id: dtID, DataSourceId: dsID, Name: "dt", Enabled: true,
-		UpdateFrequency: "daily", UpdateTimes: []string{"18:00"},
+		Schedule: api.Schedule{Type: api.Daily, Times: &expectedTimes},
 		Settings: map[string]any{}, CreatedAt: now, UpdatedAt: now,
 	}
 	s.NoError(err)
@@ -143,20 +155,22 @@ func (s *DataTypeHandlerTestSuite) TestCreateDataType_Success() {
 
 func (s *DataTypeHandlerTestSuite) TestCreateDataType_ValidationError() {
 	dsID := uuid.Must(uuid.NewV7())
+	times := []string{}
 	expectedReq := &usecase.CreateDataTypeRequest{
-		DataSourceID: dsID, Name: "dt", Enabled: true, UpdateFrequency: "bad",
-		UpdateTimes: []string{}, Settings: map[string]any{},
+		DataSourceID: dsID, Name: "dt", Enabled: true,
+		Schedule: usecase.ScheduleInput{Type: "daily", Times: []string{}},
+		Settings: map[string]any{},
 	}
-	s.ucMock.On("Create", mock.Anything, expectedReq).
-		Return(nil, &usecase.ValidationError{Message: "invalid update frequency"})
+	s.ucMock.On("Create", mock.Anything, expectedReq).Return(nil, &usecase.ValidationError{Message: "times must not be empty"})
 
 	body := &api.CreateDataTypeRequest{
-		DataSourceId: dsID, Name: "dt", Enabled: true, UpdateFrequency: "bad",
-		UpdateTimes: []string{}, Settings: map[string]any{},
+		DataSourceId: dsID, Name: "dt", Enabled: true,
+		Schedule: api.Schedule{Type: api.Daily, Times: &times},
+		Settings: map[string]any{},
 	}
 	resp, err := s.handler.CreateDataType(context.Background(), api.CreateDataTypeRequestObject{Body: body})
 
-	expected := api.CreateDataType422JSONResponse{Error: "invalid update frequency"}
+	expected := api.CreateDataType422JSONResponse{Error: "times must not be empty"}
 	s.NoError(err)
 	s.Require().IsType(api.CreateDataType422JSONResponse{}, resp)
 	s.True(cmp.Equal(expected, resp.(api.CreateDataType422JSONResponse)), cmp.Diff(expected, resp.(api.CreateDataType422JSONResponse)))
@@ -169,15 +183,16 @@ func (s *DataTypeHandlerTestSuite) TestGetDataType_Found() {
 	s.ucMock.On("Get", mock.Anything, dtID).Return(
 		&usecase.DataTypeResponse{
 			ID: dtID, DataSourceID: dsID, Name: "dt", Enabled: true,
-			UpdateFrequency: "daily", UpdateTimes: []string{},
+			Schedule: s.mustSchedule(ingestion.NewDailySchedule([]ingestion.TimeOfDay{"18:00"})),
 			Settings: map[string]any{}, CreatedAt: now, UpdatedAt: now,
 		}, nil)
 
 	resp, err := s.handler.GetDataType(context.Background(), api.GetDataTypeRequestObject{Id: dtID})
 
+	times := []string{"18:00"}
 	expected := api.GetDataType200JSONResponse{
 		Id: dtID, DataSourceId: dsID, Name: "dt", Enabled: true,
-		UpdateFrequency: "daily", UpdateTimes: []string{},
+		Schedule: api.Schedule{Type: api.Daily, Times: &times},
 		Settings: map[string]any{}, CreatedAt: now, UpdatedAt: now,
 	}
 	s.NoError(err)
@@ -202,25 +217,30 @@ func (s *DataTypeHandlerTestSuite) TestUpdateDataType_Success() {
 	dtID := uuid.Must(uuid.NewV7())
 	dsID := uuid.Must(uuid.NewV7())
 	expectedReq := &usecase.UpdateDataTypeRequest{
-		ID: dtID, Name: "updated", Enabled: false, UpdateFrequency: "weekly",
-		UpdateTimes: []string{"09:00"}, Settings: map[string]any{},
+		ID: dtID, Name: "updated", Enabled: false,
+		Schedule: usecase.ScheduleInput{Type: "daily", Times: []string{"09:00", "15:00"}},
+		Settings: map[string]any{},
 	}
+	sched := s.mustSchedule(ingestion.NewDailySchedule([]ingestion.TimeOfDay{"09:00", "15:00"}))
 	s.ucMock.On("Update", mock.Anything, expectedReq).Return(
 		&usecase.DataTypeResponse{
 			ID: dtID, DataSourceID: dsID, Name: "updated", Enabled: false,
-			UpdateFrequency: "weekly", UpdateTimes: []string{"09:00"},
+			Schedule: sched,
 			Settings: map[string]any{}, CreatedAt: now, UpdatedAt: now,
 		}, nil)
 
+	times := []string{"09:00", "15:00"}
 	body := &api.UpdateDataTypeRequest{
-		Name: "updated", Enabled: false, UpdateFrequency: "weekly",
-		UpdateTimes: []string{"09:00"}, Settings: map[string]any{},
+		Name: "updated", Enabled: false,
+		Schedule: api.Schedule{Type: api.Daily, Times: &times},
+		Settings: map[string]any{},
 	}
 	resp, err := s.handler.UpdateDataType(context.Background(), api.UpdateDataTypeRequestObject{Id: dtID, Body: body})
 
+	expectedTimes := []string{"09:00", "15:00"}
 	expected := api.UpdateDataType200JSONResponse{
 		Id: dtID, DataSourceId: dsID, Name: "updated", Enabled: false,
-		UpdateFrequency: "weekly", UpdateTimes: []string{"09:00"},
+		Schedule: api.Schedule{Type: api.Daily, Times: &expectedTimes},
 		Settings: map[string]any{}, CreatedAt: now, UpdatedAt: now,
 	}
 	s.NoError(err)
@@ -231,14 +251,17 @@ func (s *DataTypeHandlerTestSuite) TestUpdateDataType_Success() {
 func (s *DataTypeHandlerTestSuite) TestUpdateDataType_NotFound() {
 	notFoundID := uuid.Must(uuid.NewV7())
 	expectedReq := &usecase.UpdateDataTypeRequest{
-		ID: notFoundID, Name: "x", Enabled: true, UpdateFrequency: "daily",
-		UpdateTimes: []string{}, Settings: map[string]any{},
+		ID: notFoundID, Name: "x", Enabled: true,
+		Schedule: usecase.ScheduleInput{Type: "daily", Times: []string{"09:00"}},
+		Settings: map[string]any{},
 	}
 	s.ucMock.On("Update", mock.Anything, expectedReq).Return(nil, nil)
 
+	times := []string{"09:00"}
 	body := &api.UpdateDataTypeRequest{
-		Name: "x", Enabled: true, UpdateFrequency: "daily",
-		UpdateTimes: []string{}, Settings: map[string]any{},
+		Name: "x", Enabled: true,
+		Schedule: api.Schedule{Type: api.Daily, Times: &times},
+		Settings: map[string]any{},
 	}
 	resp, err := s.handler.UpdateDataType(context.Background(), api.UpdateDataTypeRequestObject{Id: notFoundID, Body: body})
 

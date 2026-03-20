@@ -3,8 +3,7 @@ required:
   - dataSourceId
   - name
   - enabled
-  - updateFrequency
-  - updateTimes
+  - schedule
   - backfillEnabled
   - staleTimeoutMinutes
   - settings
@@ -17,17 +16,8 @@ properties:
     minLength: 1
   enabled:
     type: boolean
-  updateFrequency:
-    type: string
-    enum:
-      - daily
-      - weekly
-      - monthly
-      - hourly
-  updateTimes:
-    type: array
-    items:
-      type: string
+  schedule:
+    $ref: './Schedule.yaml'
   backfillEnabled:
     type: boolean
   staleTimeoutMinutes:

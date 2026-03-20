@@ -1,0 +1,16 @@
+type: object
+required:
+  - type
+properties:
+  type:
+    type: string
+    enum:
+      - daily
+    example: daily
+  times:
+    type: array
+    items:
+      type: string
+    example:
+      - "09:00"
+      - "15:30"

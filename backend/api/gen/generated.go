@@ -23,28 +23,9 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
-// Defines values for CreateDataTypeRequestUpdateFrequency.
+// Defines values for ScheduleType.
 const (
-	CreateDataTypeRequestUpdateFrequencyDaily   CreateDataTypeRequestUpdateFrequency = "daily"
-	CreateDataTypeRequestUpdateFrequencyHourly  CreateDataTypeRequestUpdateFrequency = "hourly"
-	CreateDataTypeRequestUpdateFrequencyMonthly CreateDataTypeRequestUpdateFrequency = "monthly"
-	CreateDataTypeRequestUpdateFrequencyWeekly  CreateDataTypeRequestUpdateFrequency = "weekly"
-)
-
-// Defines values for DataTypeUpdateFrequency.
-const (
-	DataTypeUpdateFrequencyDaily   DataTypeUpdateFrequency = "daily"
-	DataTypeUpdateFrequencyHourly  DataTypeUpdateFrequency = "hourly"
-	DataTypeUpdateFrequencyMonthly DataTypeUpdateFrequency = "monthly"
-	DataTypeUpdateFrequencyWeekly  DataTypeUpdateFrequency = "weekly"
-)
-
-// Defines values for UpdateDataTypeRequestUpdateFrequency.
-const (
-	Daily   UpdateDataTypeRequestUpdateFrequency = "daily"
-	Hourly  UpdateDataTypeRequestUpdateFrequency = "hourly"
-	Monthly UpdateDataTypeRequestUpdateFrequency = "monthly"
-	Weekly  UpdateDataTypeRequestUpdateFrequency = "weekly"
+	Daily ScheduleType = "daily"
 )
 
 // CreateDataSourceRequest defines model for CreateDataSourceRequest.
@@ -57,18 +38,14 @@ type CreateDataSourceRequest struct {
 
 // CreateDataTypeRequest defines model for CreateDataTypeRequest.
 type CreateDataTypeRequest struct {
-	BackfillEnabled     bool                                 `json:"backfillEnabled"`
-	DataSourceId        openapi_types.UUID                   `json:"dataSourceId"`
-	Enabled             bool                                 `json:"enabled"`
-	Name                string                               `json:"name"`
-	Settings            map[string]interface{}               `json:"settings"`
-	StaleTimeoutMinutes int                                  `json:"staleTimeoutMinutes"`
-	UpdateFrequency     CreateDataTypeRequestUpdateFrequency `json:"updateFrequency"`
-	UpdateTimes         []string                             `json:"updateTimes"`
+	BackfillEnabled     bool                   `json:"backfillEnabled"`
+	DataSourceId        openapi_types.UUID     `json:"dataSourceId"`
+	Enabled             bool                   `json:"enabled"`
+	Name                string                 `json:"name"`
+	Schedule            Schedule               `json:"schedule"`
+	Settings            map[string]interface{} `json:"settings"`
+	StaleTimeoutMinutes int                    `json:"staleTimeoutMinutes"`
 }
-
-// CreateDataTypeRequestUpdateFrequency defines model for CreateDataTypeRequest.UpdateFrequency.
-type CreateDataTypeRequestUpdateFrequency string
 
 // DataSource defines model for DataSource.
 type DataSource struct {
@@ -83,26 +60,31 @@ type DataSource struct {
 
 // DataType defines model for DataType.
 type DataType struct {
-	BackfillEnabled     bool                    `json:"backfillEnabled"`
-	CreatedAt           time.Time               `json:"createdAt"`
-	DataSourceId        openapi_types.UUID      `json:"dataSourceId"`
-	Enabled             bool                    `json:"enabled"`
-	Id                  openapi_types.UUID      `json:"id"`
-	Name                string                  `json:"name"`
-	Settings            map[string]interface{}  `json:"settings"`
-	StaleTimeoutMinutes int                     `json:"staleTimeoutMinutes"`
-	UpdateFrequency     DataTypeUpdateFrequency `json:"updateFrequency"`
-	UpdateTimes         []string                `json:"updateTimes"`
-	UpdatedAt           time.Time               `json:"updatedAt"`
+	BackfillEnabled     bool                   `json:"backfillEnabled"`
+	CreatedAt           time.Time              `json:"createdAt"`
+	DataSourceId        openapi_types.UUID     `json:"dataSourceId"`
+	Enabled             bool                   `json:"enabled"`
+	Id                  openapi_types.UUID     `json:"id"`
+	Name                string                 `json:"name"`
+	Schedule            Schedule               `json:"schedule"`
+	Settings            map[string]interface{} `json:"settings"`
+	StaleTimeoutMinutes int                    `json:"staleTimeoutMinutes"`
+	UpdatedAt           time.Time              `json:"updatedAt"`
 }
-
-// DataTypeUpdateFrequency defines model for DataType.UpdateFrequency.
-type DataTypeUpdateFrequency string
 
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
+
+// Schedule defines model for Schedule.
+type Schedule struct {
+	Times *[]string    `json:"times,omitempty"`
+	Type  ScheduleType `json:"type"`
+}
+
+// ScheduleType defines model for Schedule.Type.
+type ScheduleType string
 
 // UpdateDataSourceRequest defines model for UpdateDataSourceRequest.
 type UpdateDataSourceRequest struct {
@@ -114,17 +96,13 @@ type UpdateDataSourceRequest struct {
 
 // UpdateDataTypeRequest defines model for UpdateDataTypeRequest.
 type UpdateDataTypeRequest struct {
-	BackfillEnabled     bool                                 `json:"backfillEnabled"`
-	Enabled             bool                                 `json:"enabled"`
-	Name                string                               `json:"name"`
-	Settings            map[string]interface{}               `json:"settings"`
-	StaleTimeoutMinutes int                                  `json:"staleTimeoutMinutes"`
-	UpdateFrequency     UpdateDataTypeRequestUpdateFrequency `json:"updateFrequency"`
-	UpdateTimes         []string                             `json:"updateTimes"`
+	BackfillEnabled     bool                   `json:"backfillEnabled"`
+	Enabled             bool                   `json:"enabled"`
+	Name                string                 `json:"name"`
+	Schedule            Schedule               `json:"schedule"`
+	Settings            map[string]interface{} `json:"settings"`
+	StaleTimeoutMinutes int                    `json:"staleTimeoutMinutes"`
 }
-
-// UpdateDataTypeRequestUpdateFrequency defines model for UpdateDataTypeRequest.UpdateFrequency.
-type UpdateDataTypeRequestUpdateFrequency string
 
 // DataSourceID defines model for DataSourceID.
 type DataSourceID = openapi_types.UUID
@@ -1057,26 +1035,26 @@ func (sh *strictHandler) HealthCheck(ctx echo.Context) error {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+xaTXPbNhD9Kxy0R8akEx8yvDlxmnrG6XhitRePDzC5EhGBAA0snbIa/vcOAMr8lC05",
-	"+nAyvlkUFrv79u3yAfKCxDLLpQCBmkQLklNFM0BQ9tMZRXolCxXD+Zn5zASJSE4xJT4RNAMSEZYQnyi4",
-	"K5iChESoCvCJjlPIqLGYSpVRJBEpCrsSy9xYaVRMzEhV+dbHpMx35qFaLrYZfVRAEZq8vsJdARpt6krm",
-	"oJCBXQiC3nLjb7Hc8VZKDlSQahnZgmRMXICYYUqi44Fnn2hAZGJm96NJwpBJQflly49LpjaUt98gRmOI",
-	"LIP/pHjaR9VG5trF5T/E3tqoFczNiMMGFlOKlaDc0ng+ZZx/egycpCFNskaB/MNCrZFymLAMZIFfmCjQ",
-	"ZZoxwbIiI1H4YMMEwgyUMSryhCL8YaAHEZeOL2b1NUko4yXxyXeAuf0jkwJT+1cqC8XLFv5N+G5DE4b1",
-	"zhAy3cKjWVg/oErRclD+DvL+kA39sLt+/UF5x9F5gkpNbw35E1uaJafY4YUJ4Y1h6sbkYOsRbMmh3TTo",
-	"imJukGWvjGy0eGOt7LcQbftdVZeJffisrn5G6bY7CA5W6596QmyJjXufLJsw+5NSUn0FnUuhR+gN5usR",
-	"qHp5umVj+/9tvb9qhpWw/LhmeJUAW5IAh3jnmxiYmEoTLWcx1F1Yy/cv5xPjVHESkRQx11EQyByEtr10",
-	"JNUsqI10YNZaKiM3plco47k3kZJ7p5fnxCf3oDST5ohwfBQehWat2YrmjETk3VF49I749vRgkQtozoL7",
-	"48AMrzfOnX0+A0tTwwtqSGLeTuSCaWxaXNsjh5so1uZtGFoBIwWCsOY0zzmL7QbBN22CWrROJQ/l+13B",
-	"lETkt6A5ZwX1eSRoSaVhXc0LFHSsWI4u5asijkHracG9ZWjG7GTDyB4LqDtJR2L4QBNP1Z1uT1ZFllFV",
-	"1vh5BmlviXTlk1zqEaj7Z7D6eAcaP8ik3Foyq456VbdnzFCoBtU+3loY7SIPAXVBJoctpE9O3r7dn+9/",
-	"KGeJ3dlzL90ukxwkHvUEfG8zyi4b6+lgwZLKRJUAB4Qh4c7s8w7h2vcc1+P5NEuCzj1IdTNgy4nz3k7S",
-	"+awLe7I/cP+S6E1lIZIeqi4ej3YR9ceH4WfAHaIV7qm3Vg7MF1COz4DdWni3pWfg8klejFSkr0G3UZTt",
-	"j9xVSnmtkXtwWhxw/B6Iki9r8Dv29EdUf+gbmfS0jJvYVYMmsdfLdwWosrlf7p1t179ZvtmXRrTXNr+Q",
-	"QnQlXEMf2sR3rQ7bp9cDaENX3Fdl+CxliA68sRGxgSqsabb5C7X+3epXUIRYz5jH9OAOcAr30ks/iRI0",
-	"NVhbB26nGLvUgBsP1gOT4VX/vST914z2FCjHdKXk+9N+/TGFeP6jt3bdm2uNFAt3sf8vzXJ7JSnnT/5g",
-	"UpuN35P2qAjqHpTHtOdyLPsvPJOUd3p57mm3sobC/VeDfeTavrvthYwp9xK4By7zDATW5p172CgIuFmX",
-	"So3R+/B9SKqb6v8AAAD//7xUn2kPIgAA",
+	"H4sIAAAAAAAC/+xa31PjNhD+VzzbPvqwOejM1W/ccXNlhuswR9oXhgdhbxIdtmSkNW2a8f/ekeTgn4EE",
+	"8oNeeYy90u5+3+76k2AOscxyKVCQhmgOOVMsQ0Jlf50yYpeyUDGenZrfXEAEOaMp+CBYhhABT8AHhXcF",
+	"V5hARKpAH3Q8xYyZFWOpMkYQQVFYS5rlZpUmxcUEytK3PkazfGseyoWxzeiTQkZY5/UN7wrUZFNXMkdF",
+	"HK0hCnaTGn/zxY43UqbIBJSLyOaQcXGOYkJTiA57nn3QSMTFxO7HkoQTl4KlFw0/Lplqobz5jjGZhcQz",
+	"/EeKp32UTWSuXFz+Q+yNjRrBXA84rGExVCwF5YbFt2Oepp8fAyepiyZZgSB/M1DHU0yK1Jr+rHAMEfwU",
+	"1KUdVCUQXC7sXkKPJpbiiGcoC/rKRUEOnYwLnhUZROHDGi4IJ6h6RLUw8vu8PaTj9zAfdv8Ev3XB90mN",
+	"LffJCbXIShjhO1M+azPGV2N9Qex2uqa3a5En62XZYYwP8jTUX34D0abfZbyM7MNntdozqNtsd76Y61fe",
+	"thuqm222+zrl9lkpqb6hzqXQAzWH5vUAT52UnNnQ/pcNOttbG6ycj79ZlhuLKwh/jcIQfDj8JToKzX6c",
+	"MNODdVI9YEqxWf3bfKUNcWae8nRmtnjYvnr0FD327VAqf1gg34TCUlheLhT+h9/9LX/ojTsuxtJElfIY",
+	"qy6vhPTXs5GZECqFCKZEuY6CQOYotC3wA6kmQbVIB8bW1hfZZrokGd96IylT7+TiDHy4R6W5NGL98CA8",
+	"CI2t2YrlHCI4OggPjsC3Ot4iFLCcB/eHgZmD75w7+3yCtnYM8MywYD5JcM411X2nrfh3E8uueR+GVrVI",
+	"QSjscpbnKY/tBsF3bYKaN84HD0PlsfJo6KPetDGgJqhjxXNyKV8WcYxaj4vUW4Rmlh2vGdljAbUn9UAM",
+	"H1niqar97BmnyDKmZhV+nkHaWyBd+pBLPQB19zRUHbRQ00eZzDaWzLJDV9luD9N1ZY/tw42F0SS5D6gL",
+	"MtkvkT4cv3+/O99/spQndmfPfdTbleQg8Zgn8K9mRVmzoZ4O5jwpTVQJpkjYL7hT+7xVcM0bh6vhfGqT",
+	"oHUjUV73quXYeW8m6XxWxB7vDtzfJXljWYikg6qLx2NtRP3hYfgFaYtohTvqraUD8xXQ8QWpzYV3M/MM",
+	"XD7kxQAjXWG4CVI2P3KXydeVRu7ey2KP43dPJfm6Br+rnu6I6g59I5OelnEja9VrEnvRe1egmtU3vZ1j",
+	"8up3vNe70oj2ruYHUoiOwhX0oU182+qweaTcgzZ05L4pw2cpQ3LgDY2INVRhVWbrf1CrvyD9CIqQqhnz",
+	"mB7cAk7hTnrpP6IEDQcr68DNkLFNDbj2YN1zMbzpv9ek/+rRPkWW0nSp5PvNvv40xfj2pbd27etkTYyK",
+	"9p8PQN4+eblfLRu+J+2UIqp7VB7Xnstx1v3gmaS8k4szTzvLCgr3/wX2kWv79rbnMmapl+A9pjLPUFC1",
+	"vHUPGwVBauymUlP0IfwQQnld/hsAAP//gVhRO5khAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

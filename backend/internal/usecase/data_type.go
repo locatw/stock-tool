@@ -11,13 +11,6 @@ import (
 	"github.com/samber/lo"
 )
 
-var validUpdateFrequencies = map[string]bool{
-	"daily":   true,
-	"weekly":  true,
-	"monthly": true,
-	"hourly":  true,
-}
-
 // DataTypeRepository provides persistence for DataType entities.
 type DataTypeRepository interface {
 	// Create persists a new DataType. Returns the created entity with
@@ -42,8 +35,7 @@ type CreateDataTypeRequest struct {
 	DataSourceID        uuid.UUID
 	Name                string
 	Enabled             bool
-	UpdateFrequency     string
-	UpdateTimes         []string
+	Schedule            ScheduleInput
 	BackfillEnabled     bool
 	StaleTimeoutMinutes int
 	Settings            map[string]any
@@ -53,8 +45,7 @@ type UpdateDataTypeRequest struct {
 	ID                  uuid.UUID
 	Name                string
 	Enabled             bool
-	UpdateFrequency     string
-	UpdateTimes         []string
+	Schedule            ScheduleInput
 	BackfillEnabled     bool
 	StaleTimeoutMinutes int
 	Settings            map[string]any
@@ -65,13 +56,18 @@ type DataTypeResponse struct {
 	DataSourceID        uuid.UUID
 	Name                string
 	Enabled             bool
-	UpdateFrequency     string
-	UpdateTimes         []string
+	Schedule            ingestion.Schedule
 	BackfillEnabled     bool
 	StaleTimeoutMinutes int
 	Settings            map[string]any
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
+}
+
+// ScheduleInput holds the raw schedule parameters before domain validation.
+type ScheduleInput struct {
+	Type  string
+	Times []string
 }
 
 func newDataTypeResponse(e *ingestion.DataType) *DataTypeResponse {
@@ -80,8 +76,7 @@ func newDataTypeResponse(e *ingestion.DataType) *DataTypeResponse {
 		DataSourceID:        e.DataSourceID(),
 		Name:                e.Name(),
 		Enabled:             e.Enabled(),
-		UpdateFrequency:     e.UpdateFrequency(),
-		UpdateTimes:         e.UpdateTimes(),
+		Schedule:            e.Schedule(),
 		BackfillEnabled:     e.BackfillEnabled(),
 		StaleTimeoutMinutes: e.StaleTimeoutMinutes(),
 		Settings:            e.Settings(),
@@ -100,7 +95,8 @@ func NewDataTypeUseCase(repo DataTypeRepository) *DataTypeUseCase {
 
 // Create creates a new data type. Returns a ValidationError on invalid input.
 func (uc *DataTypeUseCase) Create(ctx context.Context, req *CreateDataTypeRequest) (*DataTypeResponse, error) {
-	if err := validateUpdateFrequency(req.UpdateFrequency); err != nil {
+	schedule, err := buildSchedule(req.Schedule)
+	if err != nil {
 		return nil, err
 	}
 
@@ -108,8 +104,7 @@ func (uc *DataTypeUseCase) Create(ctx context.Context, req *CreateDataTypeReques
 		req.DataSourceID,
 		req.Name,
 		req.Enabled,
-		req.UpdateFrequency,
-		req.UpdateTimes,
+		schedule,
 		req.BackfillEnabled,
 		req.StaleTimeoutMinutes,
 		req.Settings,
@@ -147,7 +142,8 @@ func (uc *DataTypeUseCase) List(ctx context.Context, dataSourceID uuid.UUID) ([]
 // Update applies changes to an existing data type. Returns (nil, nil) when
 // not found, or a ValidationError on invalid input.
 func (uc *DataTypeUseCase) Update(ctx context.Context, req *UpdateDataTypeRequest) (*DataTypeResponse, error) {
-	if err := validateUpdateFrequency(req.UpdateFrequency); err != nil {
+	schedule, err := buildSchedule(req.Schedule)
+	if err != nil {
 		return nil, err
 	}
 
@@ -162,8 +158,7 @@ func (uc *DataTypeUseCase) Update(ctx context.Context, req *UpdateDataTypeReques
 	existing.Update(
 		req.Name,
 		req.Enabled,
-		req.UpdateFrequency,
-		req.UpdateTimes,
+		schedule,
 		req.BackfillEnabled,
 		req.StaleTimeoutMinutes,
 		req.Settings,
@@ -184,13 +179,23 @@ func (uc *DataTypeUseCase) Delete(ctx context.Context, id uuid.UUID) error {
 	return uc.repo.Delete(ctx, id)
 }
 
-func validateUpdateFrequency(freq string) error {
-	if !validUpdateFrequencies[freq] {
-		return &ValidationError{
-			Message: fmt.Sprintf(
-				"invalid update frequency: %s (allowed: daily, weekly, monthly, hourly)", freq,
-			),
+func buildSchedule(input ScheduleInput) (ingestion.Schedule, error) {
+	if input.Type != string(ingestion.ScheduleTypeDaily) {
+		return ingestion.Schedule{}, &ValidationError{
+			Message: fmt.Sprintf("invalid schedule type: %s", input.Type),
 		}
 	}
-	return nil
+	times := make([]ingestion.TimeOfDay, 0, len(input.Times))
+	for _, t := range input.Times {
+		tod, err := ingestion.NewTimeOfDay(t)
+		if err != nil {
+			return ingestion.Schedule{}, &ValidationError{Message: err.Error()}
+		}
+		times = append(times, tod)
+	}
+	s, err := ingestion.NewDailySchedule(times)
+	if err != nil {
+		return ingestion.Schedule{}, &ValidationError{Message: err.Error()}
+	}
+	return s, nil
 }

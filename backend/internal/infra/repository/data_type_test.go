@@ -16,7 +16,7 @@ import (
 )
 
 var dataTypeCmpOpts = cmp.Options{
-	cmp.AllowUnexported(ingestion.DataType{}),
+	cmp.AllowUnexported(ingestion.DataType{}, ingestion.Schedule{}),
 }
 
 type DataTypeRepositoryTestSuite struct {
@@ -43,6 +43,11 @@ func (s *DataTypeRepositoryTestSuite) TearDownTest() {
 	s.Require().NoError(s.CleanupMigrations())
 }
 
+func (s *DataTypeRepositoryTestSuite) mustSchedule(sched ingestion.Schedule, err error) ingestion.Schedule {
+	s.Require().NoError(err)
+	return sched
+}
+
 func (s *DataTypeRepositoryTestSuite) seedDataSource() uuid.UUID {
 	now := time.Now()
 	source := &DataSource{
@@ -62,8 +67,7 @@ func (s *DataTypeRepositoryTestSuite) seedDataSource() uuid.UUID {
 			DataSourceID:        source.ID,
 			Name:                "daily-quotes",
 			Enabled:             true,
-			UpdateFrequency:     "daily",
-			UpdateTimes:         datatypes.NewJSONType([]string{"18:00", "20:00"}),
+			Schedule:            datatypes.NewJSONType(scheduleJSON{Type: "daily", Times: []string{"18:00", "20:00"}}),
 			BackfillEnabled:     true,
 			StaleTimeoutMinutes: 30,
 			Settings:            datatypes.NewJSONType(map[string]any{"endpoint": "/quotes"}),
@@ -75,8 +79,7 @@ func (s *DataTypeRepositoryTestSuite) seedDataSource() uuid.UUID {
 			DataSourceID:        source.ID,
 			Name:                "listed-info",
 			Enabled:             false,
-			UpdateFrequency:     "weekly",
-			UpdateTimes:         datatypes.NewJSONType([]string{"09:00"}),
+			Schedule:            datatypes.NewJSONType(scheduleJSON{Type: "daily", Times: []string{"09:00", "12:00"}}),
 			BackfillEnabled:     false,
 			StaleTimeoutMinutes: 60,
 			Settings:            datatypes.NewJSONType(map[string]any{}),
@@ -98,8 +101,7 @@ func (s *DataTypeRepositoryTestSuite) TestCreate() {
 		srcID,
 		"new-type",
 		true,
-		"hourly",
-		[]string{"12:00"},
+		s.mustSchedule(ingestion.NewDailySchedule([]ingestion.TimeOfDay{"12:00"})),
 		false,
 		15,
 		map[string]any{"x": "y"},
@@ -113,8 +115,7 @@ func (s *DataTypeRepositoryTestSuite) TestCreate() {
 		srcID,
 		"new-type",
 		true,
-		"hourly",
-		[]string{"12:00"},
+		s.mustSchedule(ingestion.NewDailySchedule([]ingestion.TimeOfDay{"12:00"})),
 		false,
 		15,
 		map[string]any{"x": "y"},
@@ -185,8 +186,7 @@ func (s *DataTypeRepositoryTestSuite) TestListBySourceID() {
 		DataSourceID:        anotherSource.ID,
 		Name:                "other-type",
 		Enabled:             true,
-		UpdateFrequency:     "daily",
-		UpdateTimes:         datatypes.NewJSONType([]string{"00:00"}),
+		Schedule:            datatypes.NewJSONType(scheduleJSON{Type: "daily", Times: []string{"00:00"}}),
 		BackfillEnabled:     false,
 		StaleTimeoutMinutes: 60,
 		Settings:            datatypes.NewJSONType(map[string]any{}),
@@ -212,8 +212,7 @@ func (s *DataTypeRepositoryTestSuite) TestUpdate() {
 	origDT.Update(
 		"daily-quotes-updated",
 		false,
-		"monthly",
-		[]string{"06:00"},
+		s.mustSchedule(ingestion.NewDailySchedule([]ingestion.TimeOfDay{"06:00", "14:00"})),
 		false,
 		90,
 		map[string]any{"endpoint": "/quotes/v2"},
@@ -228,8 +227,7 @@ func (s *DataTypeRepositoryTestSuite) TestUpdate() {
 		origDT.DataSourceID(),
 		"daily-quotes-updated",
 		false,
-		"monthly",
-		[]string{"06:00"},
+		s.mustSchedule(ingestion.NewDailySchedule([]ingestion.TimeOfDay{"06:00", "14:00"})),
 		false,
 		90,
 		map[string]any{"endpoint": "/quotes/v2"},
