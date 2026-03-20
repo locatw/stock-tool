@@ -16,21 +16,22 @@ func TestTimeOfDay(t *testing.T) {
 
 func (s *TimeOfDayTestSuite) TestNew() {
 	type testCase struct {
+		name    string
 		input   string
 		wantErr bool
 	}
 	tests := []testCase{
-		{input: "00:00"},
-		{input: "09:30"},
-		{input: "23:59"},
-		{input: "24:00", wantErr: true},
-		{input: "9:30", wantErr: true},
-		{input: "09:60", wantErr: true},
-		{input: "", wantErr: true},
-		{input: "abc", wantErr: true},
+		{name: "lower bound", input: "00:00"},
+		{name: "typical time", input: "09:30"},
+		{name: "upper bound", input: "23:59"},
+		{name: "hour exceeds 23", input: "24:00", wantErr: true},
+		{name: "missing leading zero", input: "9:30", wantErr: true},
+		{name: "minute exceeds 59", input: "09:60", wantErr: true},
+		{name: "empty string", input: "", wantErr: true},
+		{name: "non-numeric", input: "abc", wantErr: true},
 	}
 	for _, tc := range tests {
-		s.Run(tc.input, func() {
+		s.Run(tc.name, func() {
 			tod, err := NewTimeOfDay(tc.input)
 			if tc.wantErr {
 				s.Error(err)
