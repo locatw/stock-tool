@@ -1,10 +1,15 @@
 package ingestion
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+// ErrDataTypeNameConflict is returned when a data type name
+// already exists for the same data source.
+var ErrDataTypeNameConflict = errors.New("data type name already exists")
 
 // DataType represents a category of data belonging to a DataSource.
 // It holds ingestion configuration: update schedule, backfill policy,

@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -111,6 +112,9 @@ func (uc *DataTypeUseCase) Create(ctx context.Context, req *CreateDataTypeReques
 	)
 	created, err := uc.repo.Create(ctx, entity)
 	if err != nil {
+		if errors.Is(err, ingestion.ErrDataTypeNameConflict) {
+			return nil, &ValidationError{Message: err.Error()}
+		}
 		return nil, fmt.Errorf("failed to create data type: %w", err)
 	}
 	return newDataTypeResponse(created), nil
@@ -164,6 +168,9 @@ func (uc *DataTypeUseCase) Update(ctx context.Context, req *UpdateDataTypeReques
 		req.Settings,
 	)
 	if err := uc.repo.Update(ctx, existing); err != nil {
+		if errors.Is(err, ingestion.ErrDataTypeNameConflict) {
+			return nil, &ValidationError{Message: err.Error()}
+		}
 		return nil, fmt.Errorf("failed to update data type: %w", err)
 	}
 

@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"stock-tool/internal/domain/ingestion"
@@ -88,6 +89,9 @@ func NewDataTypeRepository(db *gorm.DB) *DataTypeRepository {
 func (r *DataTypeRepository) Create(ctx context.Context, dt *ingestion.DataType) (*ingestion.DataType, error) {
 	dbModel := toDataTypeDBModel(dt)
 	if err := r.db.WithContext(ctx).Create(dbModel).Error; err != nil {
+		if isUniqueViolation(err) {
+			return nil, fmt.Errorf("name %q: %w", dt.Name(), ingestion.ErrDataTypeNameConflict)
+		}
 		return nil, err
 	}
 	return dbModel.toEntity(), nil
@@ -118,7 +122,7 @@ func (r *DataTypeRepository) ListBySourceID(
 }
 
 func (r *DataTypeRepository) Update(ctx context.Context, dt *ingestion.DataType) error {
-	return r.db.WithContext(ctx).
+	err := r.db.WithContext(ctx).
 		Model(&DataType{}).
 		Where("id = ?", dt.ID()).
 		Updates(map[string]any{
@@ -130,6 +134,13 @@ func (r *DataTypeRepository) Update(ctx context.Context, dt *ingestion.DataType)
 			"settings":              datatypes.NewJSONType(dt.Settings()),
 			"updated_at":            dt.UpdatedAt(),
 		}).Error
+	if err != nil {
+		if isUniqueViolation(err) {
+			return fmt.Errorf("name %q: %w", dt.Name(), ingestion.ErrDataTypeNameConflict)
+		}
+		return err
+	}
+	return nil
 }
 
 func (r *DataTypeRepository) Delete(ctx context.Context, id uuid.UUID) error {

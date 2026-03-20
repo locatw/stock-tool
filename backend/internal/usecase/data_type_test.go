@@ -99,6 +99,41 @@ func (s *DataTypeUseCaseTestSuite) TestCreate() {
 			},
 		},
 		{
+			name: "duplicate name",
+			setup: func() uuid.UUID {
+				src, err := s.dsUC.Create(ctx, &CreateDataSourceRequest{
+					Name:     "src-dup",
+					Enabled:  true,
+					Timezone: "UTC",
+					Settings: map[string]any{},
+				})
+				s.Require().NoError(err)
+				_, err = s.dtUC.Create(ctx, &CreateDataTypeRequest{
+					DataSourceID:        src.ID,
+					Name:                "daily-quotes",
+					Enabled:             true,
+					Schedule:            ScheduleInput{Type: "daily", Times: []string{"18:00"}},
+					BackfillEnabled:     true,
+					StaleTimeoutMinutes: 30,
+					Settings:            map[string]any{},
+				})
+				s.Require().NoError(err)
+				return src.ID
+			},
+			req: func(id uuid.UUID) *CreateDataTypeRequest {
+				return &CreateDataTypeRequest{
+					DataSourceID:        id,
+					Name:                "daily-quotes",
+					Enabled:             true,
+					Schedule:            ScheduleInput{Type: "daily", Times: []string{"18:00"}},
+					BackfillEnabled:     true,
+					StaleTimeoutMinutes: 30,
+					Settings:            map[string]any{},
+				}
+			},
+			expectErrAs: &ValidationError{},
+		},
+		{
 			name:  "invalid schedule type",
 			setup: func() uuid.UUID { return uuid.Must(uuid.NewV7()) },
 			req: func(id uuid.UUID) *CreateDataTypeRequest {
@@ -326,6 +361,45 @@ func (s *DataTypeUseCaseTestSuite) TestUpdate() {
 				}
 			},
 			expected: nil,
+		},
+		{
+			name: "duplicate name",
+			setup: func() uuid.UUID {
+				src, err := s.dsUC.Create(ctx, &CreateDataSourceRequest{
+					Name:     "src-dup",
+					Enabled:  true,
+					Timezone: "UTC",
+					Settings: map[string]any{},
+				})
+				s.Require().NoError(err)
+				_, err = s.dtUC.Create(ctx, &CreateDataTypeRequest{
+					DataSourceID: src.ID,
+					Name:         "existing-name",
+					Enabled:      true,
+					Schedule:     ScheduleInput{Type: "daily", Times: []string{"18:00"}},
+					Settings:     map[string]any{},
+				})
+				s.Require().NoError(err)
+				dt, err := s.dtUC.Create(ctx, &CreateDataTypeRequest{
+					DataSourceID: src.ID,
+					Name:         "to-rename",
+					Enabled:      true,
+					Schedule:     ScheduleInput{Type: "daily", Times: []string{"18:00"}},
+					Settings:     map[string]any{},
+				})
+				s.Require().NoError(err)
+				return dt.ID
+			},
+			req: func(id uuid.UUID) *UpdateDataTypeRequest {
+				return &UpdateDataTypeRequest{
+					ID:       id,
+					Name:     "existing-name",
+					Enabled:  true,
+					Schedule: ScheduleInput{Type: "daily", Times: []string{"18:00"}},
+					Settings: map[string]any{},
+				}
+			},
+			expectErrAs: &ValidationError{},
 		},
 		{
 			name:  "invalid schedule",
