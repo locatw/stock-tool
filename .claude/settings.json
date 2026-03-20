@@ -46,6 +46,11 @@
           },
           {
             "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/test-go.sh",
+            "timeout": 300
+          },
+          {
+            "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-markdown-conventions.sh",
             "timeout": 180,
             "async": true
