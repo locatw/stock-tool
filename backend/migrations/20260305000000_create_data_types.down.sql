@@ -1,0 +1,5 @@
+BEGIN;
+
+DROP TABLE IF EXISTS stock.data_types CASCADE;
+
+COMMIT;

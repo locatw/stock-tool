@@ -1,6 +1,5 @@
 BEGIN;
 
-DROP TABLE IF EXISTS stock.data_types CASCADE;
 DROP TABLE IF EXISTS stock.data_sources CASCADE;
 
 COMMIT;
