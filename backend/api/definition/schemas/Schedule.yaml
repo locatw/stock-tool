@@ -1,15 +1,22 @@
+description: Defines when ingestion runs for a data type.
 type: object
 required:
   - type
+  - times
 properties:
   type:
+    description: Schedule cadence; currently only 'daily' is supported.
     type: string
     enum:
       - daily
     example: daily
   times:
+    description: >-
+      HH:MM times (24-hour, in the data source's timezone) at which ingestion runs each day.
     type: array
+    minItems: 1
     items:
+      description: A time in HH:MM format (24-hour).
       type: string
     example:
       - "09:00"

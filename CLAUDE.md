@@ -19,6 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [doc/coding-guidelines/go/doc-comments.md](doc/coding-guidelines/go/doc-comments.md) — Go doc comment conventions
 - [doc/coding-guidelines/go/testing.md](doc/coding-guidelines/go/testing.md) — Go testing conventions
 - [doc/coding-guidelines/markdown/style.md](doc/coding-guidelines/markdown/style.md) — Markdown formatting rules
+- [doc/coding-guidelines/openapi/schemas.md](doc/coding-guidelines/openapi/schemas.md) — OpenAPI schema conventions (descriptions, examples)
 - [doc/review-guidelines/overview.md](doc/review-guidelines/overview.md) — Review guidelines (code, security, test coverage, architecture)
 - [doc/specification-guideline.md](doc/specification-guideline.md) — Where to write specifications (doc/spec/ vs code doc comments)
 - [doc/spec/](doc/spec/) — Specifications with use case scenarios

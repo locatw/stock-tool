@@ -108,7 +108,7 @@ func (s *DataTypeHandlerTestSuite) TestListDataTypes() {
 	expected := api.ListDataTypes200JSONResponse{
 		{
 			Id: dtID, DataSourceId: dsID, Name: "dt1", Enabled: true,
-			Schedule: api.Schedule{Type: api.Daily, Times: &times},
+			Schedule: api.Schedule{Type: api.Daily, Times: times},
 			Settings: map[string]any{}, CreatedAt: now, UpdatedAt: now,
 		},
 	}
@@ -137,7 +137,7 @@ func (s *DataTypeHandlerTestSuite) TestCreateDataType_Success() {
 	times := []string{"18:00"}
 	body := &api.CreateDataTypeRequest{
 		DataSourceId: dsID, Name: "dt", Enabled: true,
-		Schedule: api.Schedule{Type: api.Daily, Times: &times},
+		Schedule: api.Schedule{Type: api.Daily, Times: times},
 		Settings: map[string]any{},
 	}
 	resp, err := s.handler.CreateDataType(context.Background(), api.CreateDataTypeRequestObject{Body: body})
@@ -145,7 +145,7 @@ func (s *DataTypeHandlerTestSuite) TestCreateDataType_Success() {
 	expectedTimes := []string{"18:00"}
 	expected := api.CreateDataType201JSONResponse{
 		Id: dtID, DataSourceId: dsID, Name: "dt", Enabled: true,
-		Schedule: api.Schedule{Type: api.Daily, Times: &expectedTimes},
+		Schedule: api.Schedule{Type: api.Daily, Times: expectedTimes},
 		Settings: map[string]any{}, CreatedAt: now, UpdatedAt: now,
 	}
 	s.NoError(err)
@@ -165,7 +165,7 @@ func (s *DataTypeHandlerTestSuite) TestCreateDataType_ValidationError() {
 
 	body := &api.CreateDataTypeRequest{
 		DataSourceId: dsID, Name: "dt", Enabled: true,
-		Schedule: api.Schedule{Type: api.Daily, Times: &times},
+		Schedule: api.Schedule{Type: api.Daily, Times: times},
 		Settings: map[string]any{},
 	}
 	resp, err := s.handler.CreateDataType(context.Background(), api.CreateDataTypeRequestObject{Body: body})
@@ -192,7 +192,7 @@ func (s *DataTypeHandlerTestSuite) TestGetDataType_Found() {
 	times := []string{"18:00"}
 	expected := api.GetDataType200JSONResponse{
 		Id: dtID, DataSourceId: dsID, Name: "dt", Enabled: true,
-		Schedule: api.Schedule{Type: api.Daily, Times: &times},
+		Schedule: api.Schedule{Type: api.Daily, Times: times},
 		Settings: map[string]any{}, CreatedAt: now, UpdatedAt: now,
 	}
 	s.NoError(err)
@@ -232,7 +232,7 @@ func (s *DataTypeHandlerTestSuite) TestUpdateDataType_Success() {
 	times := []string{"09:00", "15:00"}
 	body := &api.UpdateDataTypeRequest{
 		Name: "updated", Enabled: false,
-		Schedule: api.Schedule{Type: api.Daily, Times: &times},
+		Schedule: api.Schedule{Type: api.Daily, Times: times},
 		Settings: map[string]any{},
 	}
 	resp, err := s.handler.UpdateDataType(context.Background(), api.UpdateDataTypeRequestObject{Id: dtID, Body: body})
@@ -240,7 +240,7 @@ func (s *DataTypeHandlerTestSuite) TestUpdateDataType_Success() {
 	expectedTimes := []string{"09:00", "15:00"}
 	expected := api.UpdateDataType200JSONResponse{
 		Id: dtID, DataSourceId: dsID, Name: "updated", Enabled: false,
-		Schedule: api.Schedule{Type: api.Daily, Times: &expectedTimes},
+		Schedule: api.Schedule{Type: api.Daily, Times: expectedTimes},
 		Settings: map[string]any{}, CreatedAt: now, UpdatedAt: now,
 	}
 	s.NoError(err)
@@ -260,7 +260,7 @@ func (s *DataTypeHandlerTestSuite) TestUpdateDataType_NotFound() {
 	times := []string{"09:00"}
 	body := &api.UpdateDataTypeRequest{
 		Name: "x", Enabled: true,
-		Schedule: api.Schedule{Type: api.Daily, Times: &times},
+		Schedule: api.Schedule{Type: api.Daily, Times: times},
 		Settings: map[string]any{},
 	}
 	resp, err := s.handler.UpdateDataType(context.Background(), api.UpdateDataTypeRequestObject{Id: notFoundID, Body: body})

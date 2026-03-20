@@ -51,7 +51,7 @@ func (h *DataTypeHandler) CreateDataType(
 		Enabled:      request.Body.Enabled,
 		Schedule: usecase.ScheduleInput{
 			Type:  string(request.Body.Schedule.Type),
-			Times: lo.FromPtr(request.Body.Schedule.Times),
+			Times: request.Body.Schedule.Times,
 		},
 		BackfillEnabled:     request.Body.BackfillEnabled,
 		StaleTimeoutMinutes: request.Body.StaleTimeoutMinutes,
@@ -88,7 +88,7 @@ func (h *DataTypeHandler) UpdateDataType(
 		Enabled: request.Body.Enabled,
 		Schedule: usecase.ScheduleInput{
 			Type:  string(request.Body.Schedule.Type),
-			Times: lo.FromPtr(request.Body.Schedule.Times),
+			Times: request.Body.Schedule.Times,
 		},
 		BackfillEnabled:     request.Body.BackfillEnabled,
 		StaleTimeoutMinutes: request.Body.StaleTimeoutMinutes,
@@ -132,5 +132,5 @@ func toDataTypeResponse(r *usecase.DataTypeResponse) api.DataType {
 
 func toScheduleAPI(s ingestion.Schedule) api.Schedule {
 	times := lo.Map(s.Times(), func(t ingestion.TimeOfDay, _ int) string { return string(t) })
-	return api.Schedule{Type: api.Daily, Times: &times}
+	return api.Schedule{Type: api.Daily, Times: times}
 }

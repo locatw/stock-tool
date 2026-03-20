@@ -30,78 +30,152 @@ const (
 
 // CreateDataSourceRequest defines model for CreateDataSourceRequest.
 type CreateDataSourceRequest struct {
-	Enabled  bool                   `json:"enabled"`
-	Name     string                 `json:"name"`
+	// Enabled Whether the data source is active for ingestion.
+	Enabled bool `json:"enabled"`
+
+	// Name Name of the data source.
+	Name string `json:"name"`
+
+	// Settings Provider-specific configuration.
 	Settings map[string]interface{} `json:"settings"`
-	Timezone string                 `json:"timezone"`
+
+	// Timezone IANA timezone name.
+	Timezone string `json:"timezone"`
 }
 
 // CreateDataTypeRequest defines model for CreateDataTypeRequest.
 type CreateDataTypeRequest struct {
-	BackfillEnabled     bool                   `json:"backfillEnabled"`
-	DataSourceId        openapi_types.UUID     `json:"dataSourceId"`
-	Enabled             bool                   `json:"enabled"`
-	Name                string                 `json:"name"`
-	Schedule            Schedule               `json:"schedule"`
-	Settings            map[string]interface{} `json:"settings"`
-	StaleTimeoutMinutes int                    `json:"staleTimeoutMinutes"`
+	// BackfillEnabled Whether historical data backfill is enabled.
+	BackfillEnabled bool `json:"backfillEnabled"`
+
+	// DataSourceId ID of the data source this type belongs to.
+	DataSourceId openapi_types.UUID `json:"dataSourceId"`
+
+	// Enabled Whether this data type should be actively ingested.
+	Enabled bool `json:"enabled"`
+
+	// Name Name of the data type.
+	Name string `json:"name"`
+
+	// Schedule Defines when ingestion runs for a data type.
+	Schedule Schedule `json:"schedule"`
+
+	// Settings Data-type-specific ingestion configuration.
+	Settings map[string]interface{} `json:"settings"`
+
+	// StaleTimeoutMinutes Minutes after the scheduled time before a run is considered stale.
+	StaleTimeoutMinutes int `json:"staleTimeoutMinutes"`
 }
 
 // DataSource defines model for DataSource.
 type DataSource struct {
-	CreatedAt time.Time              `json:"createdAt"`
-	Enabled   bool                   `json:"enabled"`
-	Id        openapi_types.UUID     `json:"id"`
-	Name      string                 `json:"name"`
-	Settings  map[string]interface{} `json:"settings"`
-	Timezone  string                 `json:"timezone"`
-	UpdatedAt time.Time              `json:"updatedAt"`
+	// CreatedAt Time when the data source was created (RFC 3339).
+	CreatedAt time.Time `json:"createdAt"`
+
+	// Enabled Whether this data source is active for ingestion.
+	Enabled bool `json:"enabled"`
+
+	// Id Unique identifier of the data source.
+	Id openapi_types.UUID `json:"id"`
+
+	// Name Name of the data source.
+	Name string `json:"name"`
+
+	// Settings Provider-specific configuration passed to the ingestion adapter.
+	Settings map[string]interface{} `json:"settings"`
+
+	// Timezone IANA timezone name used to interpret scheduled times.
+	Timezone string `json:"timezone"`
+
+	// UpdatedAt Time when the data source was last updated (RFC 3339).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // DataType defines model for DataType.
 type DataType struct {
-	BackfillEnabled     bool                   `json:"backfillEnabled"`
-	CreatedAt           time.Time              `json:"createdAt"`
-	DataSourceId        openapi_types.UUID     `json:"dataSourceId"`
-	Enabled             bool                   `json:"enabled"`
-	Id                  openapi_types.UUID     `json:"id"`
-	Name                string                 `json:"name"`
-	Schedule            Schedule               `json:"schedule"`
-	Settings            map[string]interface{} `json:"settings"`
-	StaleTimeoutMinutes int                    `json:"staleTimeoutMinutes"`
-	UpdatedAt           time.Time              `json:"updatedAt"`
+	// BackfillEnabled Whether historical data backfill is enabled.
+	BackfillEnabled bool `json:"backfillEnabled"`
+
+	// CreatedAt Time when the data type was created (RFC 3339).
+	CreatedAt time.Time `json:"createdAt"`
+
+	// DataSourceId ID of the data source this data type belongs to.
+	DataSourceId openapi_types.UUID `json:"dataSourceId"`
+
+	// Enabled Whether this data type is actively ingested.
+	Enabled bool `json:"enabled"`
+
+	// Id Unique identifier of the data type.
+	Id openapi_types.UUID `json:"id"`
+
+	// Name Name of the data type.
+	Name string `json:"name"`
+
+	// Schedule Defines when ingestion runs for a data type.
+	Schedule Schedule `json:"schedule"`
+
+	// Settings Data-type-specific ingestion configuration.
+	Settings map[string]interface{} `json:"settings"`
+
+	// StaleTimeoutMinutes Minutes after the scheduled time before a run is considered stale.
+	StaleTimeoutMinutes int `json:"staleTimeoutMinutes"`
+
+	// UpdatedAt Time when the data type was last updated (RFC 3339).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
+	// Error Human-readable message describing what went wrong.
 	Error string `json:"error"`
 }
 
-// Schedule defines model for Schedule.
+// Schedule Defines when ingestion runs for a data type.
 type Schedule struct {
-	Times *[]string    `json:"times,omitempty"`
-	Type  ScheduleType `json:"type"`
+	// Times HH:MM times (24-hour, in the data source's timezone) at which ingestion runs each day.
+	Times []string `json:"times"`
+
+	// Type Schedule cadence; currently only 'daily' is supported.
+	Type ScheduleType `json:"type"`
 }
 
-// ScheduleType defines model for Schedule.Type.
+// ScheduleType Schedule cadence; currently only 'daily' is supported.
 type ScheduleType string
 
 // UpdateDataSourceRequest defines model for UpdateDataSourceRequest.
 type UpdateDataSourceRequest struct {
-	Enabled  bool                   `json:"enabled"`
-	Name     string                 `json:"name"`
+	// Enabled Whether the data source is active for ingestion.
+	Enabled bool `json:"enabled"`
+
+	// Name Name of the data source.
+	Name string `json:"name"`
+
+	// Settings Provider-specific configuration.
 	Settings map[string]interface{} `json:"settings"`
-	Timezone string                 `json:"timezone"`
+
+	// Timezone IANA timezone name.
+	Timezone string `json:"timezone"`
 }
 
 // UpdateDataTypeRequest defines model for UpdateDataTypeRequest.
 type UpdateDataTypeRequest struct {
-	BackfillEnabled     bool                   `json:"backfillEnabled"`
-	Enabled             bool                   `json:"enabled"`
-	Name                string                 `json:"name"`
-	Schedule            Schedule               `json:"schedule"`
-	Settings            map[string]interface{} `json:"settings"`
-	StaleTimeoutMinutes int                    `json:"staleTimeoutMinutes"`
+	// BackfillEnabled Whether historical data backfill is enabled.
+	BackfillEnabled bool `json:"backfillEnabled"`
+
+	// Enabled Whether this data type should be actively ingested.
+	Enabled bool `json:"enabled"`
+
+	// Name Name of the data type.
+	Name string `json:"name"`
+
+	// Schedule Defines when ingestion runs for a data type.
+	Schedule Schedule `json:"schedule"`
+
+	// Settings Data-type-specific ingestion configuration.
+	Settings map[string]interface{} `json:"settings"`
+
+	// StaleTimeoutMinutes Minutes after the scheduled time before a run is considered stale.
+	StaleTimeoutMinutes int `json:"staleTimeoutMinutes"`
 }
 
 // DataSourceID defines model for DataSourceID.
@@ -1035,26 +1109,36 @@ func (sh *strictHandler) HealthCheck(ctx echo.Context) error {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"fwYAAP//iXYEY1YuAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

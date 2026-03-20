@@ -6,13 +6,21 @@ required:
   - settings
 properties:
   name:
+    description: Name of the data source.
     type: string
     minLength: 1
+    example: "J-Quants"
   enabled:
+    description: Whether the data source is active for ingestion.
     type: boolean
+    example: true
   timezone:
+    description: IANA timezone name.
     type: string
     minLength: 1
+    example: "Asia/Tokyo"
   settings:
+    description: Provider-specific configuration.
     type: object
     additionalProperties: true
+    example: {}

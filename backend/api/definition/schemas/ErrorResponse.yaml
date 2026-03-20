@@ -3,4 +3,6 @@ required:
   - error
 properties:
   error:
+    description: Human-readable message describing what went wrong.
     type: string
+    example: "data source not found"

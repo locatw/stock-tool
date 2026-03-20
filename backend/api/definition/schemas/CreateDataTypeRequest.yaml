@@ -9,20 +9,32 @@ required:
   - settings
 properties:
   dataSourceId:
+    description: ID of the data source this type belongs to.
     type: string
     format: uuid
+    example: "550e8400-e29b-41d4-a716-446655440000"
   name:
+    description: Name of the data type.
     type: string
     minLength: 1
+    example: "stock_prices"
   enabled:
+    description: Whether this data type should be actively ingested.
     type: boolean
+    example: true
   schedule:
     $ref: './Schedule.yaml'
   backfillEnabled:
+    description: Whether historical data backfill is enabled.
     type: boolean
+    example: true
   staleTimeoutMinutes:
+    description: Minutes after the scheduled time before a run is considered stale.
     type: integer
     minimum: 0
+    example: 30
   settings:
+    description: Data-type-specific ingestion configuration.
     type: object
     additionalProperties: true
+    example: {}
