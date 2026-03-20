@@ -1,11 +1,16 @@
 package ingestion
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+// ErrDataSourceNameConflict is returned when a data source name
+// already exists in the repository.
+var ErrDataSourceNameConflict = errors.New("data source name already exists")
 
 // DataSource represents an external data provider from which stock data
 // is ingested. Timezone must be a valid IANA location; NewDataSource

@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -90,6 +91,9 @@ func (uc *DataSourceUseCase) Create(ctx context.Context, req *CreateDataSourceRe
 	}
 	created, err := uc.repo.Create(ctx, ds)
 	if err != nil {
+		if errors.Is(err, ingestion.ErrDataSourceNameConflict) {
+			return nil, &ValidationError{Message: err.Error()}
+		}
 		return nil, fmt.Errorf("failed to create data source: %w", err)
 	}
 	return newDataSourceResponse(created), nil
@@ -133,6 +137,9 @@ func (uc *DataSourceUseCase) Update(ctx context.Context, req *UpdateDataSourceRe
 		return nil, &ValidationError{Message: err.Error()}
 	}
 	if err := uc.repo.Update(ctx, existing); err != nil {
+		if errors.Is(err, ingestion.ErrDataSourceNameConflict) {
+			return nil, &ValidationError{Message: err.Error()}
+		}
 		return nil, fmt.Errorf("failed to update data source: %w", err)
 	}
 

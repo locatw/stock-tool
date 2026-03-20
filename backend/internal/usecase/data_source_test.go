@@ -76,6 +76,16 @@ func (s *DataSourceUseCaseTestSuite) TestCreate() {
 			},
 			expectErrAs: &ValidationError{},
 		},
+		{
+			name: "duplicate name",
+			req: &CreateDataSourceRequest{
+				Name:     "test-source",
+				Enabled:  false,
+				Timezone: "UTC",
+				Settings: map[string]any{},
+			},
+			expectErrAs: &ValidationError{},
+		},
 	}
 	for _, tc := range tests {
 		s.Run(tc.name, func() {
@@ -262,6 +272,36 @@ func (s *DataSourceUseCaseTestSuite) TestUpdate() {
 					Name:     "x",
 					Enabled:  true,
 					Timezone: "Bad/Zone",
+					Settings: map[string]any{},
+				}
+			},
+			expectErrAs: &ValidationError{},
+		},
+		{
+			name: "duplicate name",
+			setup: func() uuid.UUID {
+				_, err := s.uc.Create(ctx, &CreateDataSourceRequest{
+					Name:     "existing-src",
+					Enabled:  true,
+					Timezone: "UTC",
+					Settings: map[string]any{},
+				})
+				s.Require().NoError(err)
+				created, err := s.uc.Create(ctx, &CreateDataSourceRequest{
+					Name:     "rename-target",
+					Enabled:  true,
+					Timezone: "UTC",
+					Settings: map[string]any{},
+				})
+				s.Require().NoError(err)
+				return created.ID
+			},
+			req: func(id uuid.UUID) *UpdateDataSourceRequest {
+				return &UpdateDataSourceRequest{
+					ID:       id,
+					Name:     "existing-src",
+					Enabled:  true,
+					Timezone: "UTC",
 					Settings: map[string]any{},
 				}
 			},

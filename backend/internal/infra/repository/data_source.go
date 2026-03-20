@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"stock-tool/internal/domain/ingestion"
@@ -59,6 +60,9 @@ func NewDataSourceRepository(db *gorm.DB) *DataSourceRepository {
 func (r *DataSourceRepository) Create(ctx context.Context, src *ingestion.DataSource) (*ingestion.DataSource, error) {
 	dbModel := toDataSourceDBModel(src)
 	if err := r.db.WithContext(ctx).Create(dbModel).Error; err != nil {
+		if isUniqueViolation(err) {
+			return nil, fmt.Errorf("name %q: %w", src.Name(), ingestion.ErrDataSourceNameConflict)
+		}
 		return nil, err
 	}
 	return dbModel.toEntity(), nil
@@ -85,7 +89,7 @@ func (r *DataSourceRepository) List(ctx context.Context) ([]*ingestion.DataSourc
 }
 
 func (r *DataSourceRepository) Update(ctx context.Context, src *ingestion.DataSource) error {
-	return r.db.WithContext(ctx).
+	err := r.db.WithContext(ctx).
 		Model(&DataSource{}).
 		Where("id = ?", src.ID()).
 		Updates(map[string]any{
@@ -95,6 +99,13 @@ func (r *DataSourceRepository) Update(ctx context.Context, src *ingestion.DataSo
 			"settings":   datatypes.NewJSONType(src.Settings()),
 			"updated_at": src.UpdatedAt(),
 		}).Error
+	if err != nil {
+		if isUniqueViolation(err) {
+			return fmt.Errorf("name %q: %w", src.Name(), ingestion.ErrDataSourceNameConflict)
+		}
+		return err
+	}
+	return nil
 }
 
 // Delete deletes the data source with the given ID.
